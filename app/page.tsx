@@ -142,8 +142,7 @@ export default function HomePage() {
           transition={{ delay: 0.4, duration: 0.8 }}
           className="mt-6 text-lg max-w-2xl text-gray-600"
         >
-          Dive into inspiring stories, fresh perspectives, and captivating
-          insights that shape our journey every day.
+          A guide built for remote professionals and creatives who want to thrive in a digital world.
         </motion.p>
 
         <motion.button

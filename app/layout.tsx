@@ -5,11 +5,11 @@ import CookieNotice from "../components/CookieNotice";
 
 export const metadata = {
   title: {
-    default: "My Blog — Inspiring Stories & Ideas",
-    template: "%s | My Blog",
+    default: "krevv — Guide Designed for Digital & Remote workers.",
+    template: "%s | krevv",
   },
   description:
-    "Discover inspiring stories, tutorials, and creative insights about life, tech, and creativity.",
+    "A guide built for remote professionals and creatives who want to thrive in a digital world.",
   keywords: [
     "blog",
     "stories",
@@ -19,23 +19,23 @@ export const metadata = {
     "creative writing",
     "lifestyle",
   ],
-  metadataBase: new URL("https://yourdomain.com"), // ✅ replace with your real domain
-  authors: [{ name: "My Blog Team", url: "https://yourdomain.com" }],
-  creator: "My Blog Team",
-  publisher: "My Blog",
+  metadataBase: new URL("https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev"), // ✅ replace with your real domain
+  authors: [{ name: "Krevv Team", url: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev" }],
+  creator: "Krevv",
+  publisher: "Krevv",
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: "My Blog — Inspiring Stories & Ideas",
+    title: "krevv — Guide Designed for Digital & Remote workers",
     description:
-      "Discover inspiring stories, tutorials, and creative insights about life, tech, and creativity.",
-    url: "https://yourdomain.com",
-    siteName: "My Blog",
+      "A guide built for remote professionals and creatives who want to thrive in a digital world.",
+    url: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev/",
+    siteName: "krevv",
     images: [
       {
-        url: "https://yourdomain.com/og-default.png",
+        url: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev/krevv.png",
         width: 1200,
         height: 630,
         alt: "My Blog preview image",
@@ -46,14 +46,14 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "My Blog — Inspiring Stories & Ideas",
+    title: "krevv — Guide Designed for Digital & Remote workers.",
     description:
-      "Discover inspiring stories, tutorials, and creative insights about life, tech, and creativity.",
+      "A guide built for remote professionals and creatives who want to thrive in a digital world..",
     creator: "@yourhandle", // replace with your Twitter handle
-    images: ["https://yourdomain.com/twitter-card.png"],
+    images: ["https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev/krevv.png"],
   },
   alternates: {
-    canonical: "https://yourdomain.com",
+    canonical: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev",
   },
 };
 
