@@ -68,6 +68,10 @@ export default async function RootLayout({
 }) {
   const cookieStore = await cookies();
   const maintenanceEnabled = cookieStore.get("maintenance")?.value === "true";
+   const router = useRouter();
+
+  // Define admin routes
+  const isAdminRoute = router.pathname.startsWith('/admin');
 
   return (
     <html lang="en">
@@ -76,7 +80,7 @@ export default async function RootLayout({
         <ConditionalNavbar />
 
         <main className="flex-1">
-          {maintenanceEnabled ? (
+          {maintenanceEnabled && isAdminRoute ? (
             <MaintenancePage />
           ) : (
             <>
