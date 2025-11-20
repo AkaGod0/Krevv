@@ -11,9 +11,16 @@ export const metadata = {
     default: "krevv — Guide Designed for Digital & Remote workers.",
     template: "%s | krevv",
   },
-  icons:{
-    icon: "/newf.png",
+ icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180" },
+      { url: "/favicon.ico" }
+    ],
+    apple: "/apple-touch-icon.png",
   },
+  manifest: "/site.webmanifest",
   description:
     "A guide built for remote professionals and creatives who want to thrive in a digital world.",
   keywords: [
@@ -75,6 +82,8 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+
+
       <body className="bg-cream text-gray-800 flex flex-col min-h-screen">
 
         <ConditionalNavbar />

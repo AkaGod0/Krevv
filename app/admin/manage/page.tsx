@@ -115,20 +115,8 @@ export default function ManagePostsPage() {
             <h3 className="text-2xl sm:text-4xl font-bold mb-2">{post.title}</h3>
             <h3 className="text-xl sm:text-2xl font-bold mb-2">{post.slug}</h3>
             <h3 className="text-xl sm:text-2xl font-bold mb-2">{post.category}</h3>
-            <p className="text-gray-300 mb-4 text-sm sm:text-base leading-relaxed">{post.content}</p>
-                       {/* ✅ Show content images if available */}
-{Array.isArray(post.contentImages) && post.contentImages.length > 0 && (
-  <div className="grid grid-cols-2 gap-2 mb-4">
-    {post.contentImages.map((img: string, i: number) => (
-      <img
-        key={i}
-        src={img}
-        alt={`Content image ${i + 1}`}
-        className="w-full h-32 object-cover rounded-lg border border-purple-600/30"
-      />
-    ))}
-  </div>
-)}
+          
+
         
             <div className="flex justify-between text-xs sm:text-sm text-gray-400 mb-4">
               <span>❤️ {post.likes?.length || 0}</span>

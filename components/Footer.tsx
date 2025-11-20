@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
         {/* Copyright */}
         <p className="text-sm sm:text-base text-gray-200">
-          © {new Date().getFullYear()} MyBlog. All rights reserved.
+          © {new Date().getFullYear()} krevv. All rights reserved.
         </p>
 
         {/* Links */}

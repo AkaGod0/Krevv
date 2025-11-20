@@ -7,10 +7,23 @@ import {
   Heart,
   MessageCircle,
   Loader2,
-  ArrowDownCircle,
   Share2,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+
+
+const stripHtmlAndImages = (html: string) => {
+  if (!html) return "No content";
+  
+  return html
+    .replace(/<img[^>]*>/g, "")       // Remove images first
+    .replace(/<[^>]*>/g, " ")         // Remove all HTML tags
+    .replace(/\s+/g, " ")             // Normalize whitespace
+    .trim()
+    .slice(0, 300)                    // Optional: limit length
+    + (html.length > 300 ? "..." : "");
+};
 
 interface Post {
   _id: string;
@@ -37,7 +50,7 @@ export default function HomePage() {
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
         const all = res.data || [];
         const postsWithCounts = await Promise.all(
-          all.slice(0, 4).map(async (post: Post) => {
+          all.slice(0, 10).map(async (post: Post) => {
             try {
               const likesRes = await axios.get(
                 `${process.env.NEXT_PUBLIC_API_URL}/likes/${post._id}`
@@ -95,12 +108,6 @@ export default function HomePage() {
     setTimeout(() => setCopied(false), 2000); // ✅ hide after 2s
   };
 
-  const scrollToPosts = () => {
-    const postsSection = document.getElementById("posts-section");
-    if (postsSection) {
-      postsSection.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   if (loading)
     return (
@@ -126,75 +133,47 @@ export default function HomePage() {
         )}
       </AnimatePresence>
 
-      {/* INTRO HERO */}
-      <section className="relative flex flex-col justify-center items-center text-center py-24 px-6 bg-gradient-to-b from-[#fef6e4] to-[#fffaf6]">
-        <motion.h1
-          initial={{ opacity: 0, y: -40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-6xl font-extrabold text-[#3e2a1a] drop-shadow-lg"
-        >
-          Welcome to <span className="text-amber-600">Our World of Stories</span>
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
-          className="mt-6 text-lg max-w-2xl text-gray-600"
-        >
-          A guide built for remote professionals and creatives who want to thrive in a digital world.
-        </motion.p>
+     {/* INTRO HERO - 100% WORKING */}
+<section className="relative h-[70vh] flex items-center justify-center text-center overflow-hidden">
+  {/* Background Image */}
+  <img
+    src="/coverpage.jpeg"
+    alt="coverpage"
+    className="absolute inset-0 w-full h-full object-cover brightness-75 z-0"
+    loading="eager"
+  />
 
-        <motion.button
-          onClick={scrollToPosts}
-          whileHover={{ scale: 1.2 }}
-          whileTap={{ scale: 0.9 }}
-          transition={{ duration: 0.3 }}
-          className="mt-12 text-amber-600 hover:text-amber-700 focus:outline-none"
-        >
-          <ArrowDownCircle className="animate-bounce w-12 h-12" />
-        </motion.button>
-      </section>
+  {/* Dark Gradient Overlay */}
+  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-0" />
 
-      {/* HERO POST */}
-      <section id="posts-section" className="text-center py-16">
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-5xl font-bold text-[#3e2a1a]"
-        >
-          Our News
-        </motion.h2>
-        <p className="text-gray-500 mt-3">
-          Get the latest updates and deeper stories from our blog
-        </p>
+  {/* Text Content ON TOP of the Image */}
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 1 }}
+    className="relative z-10 max-w-5xl px-6"
+  >
+    <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight drop-shadow-2xl">
+      The future of work is here —{" "}
+      <span className="text-amber-400">flexible, global,</span> and in your hands
+    </h1>
 
-        {posts[0] && (
-          <div className="max-w-5xl mx-auto mt-10">
-            <Link href={`/post/${posts[0].slug}`}>
-              <motion.img
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.7 }}
-                src={posts[0].image || "https://via.placeholder.com/800x400"}
-                alt={posts[0].title}
-                className="rounded-lg shadow-2xl w-full object-cover hover:scale-[1.02] transition-transform"
-              />
-            </Link>
-            <h3 className="text-xl font-semibold mt-5 text-gray-800">
-              {posts[0].title}
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              {new Date(posts[0].createdAt).toDateString()}
-            </p>
-          </div>
-        )}
-      </section>
+    <motion.p
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4, duration: 0.8 }}
+      className="mt-8 text-lg md:text-2xl font-medium text-amber-100 max-w-3xl mx-auto leading-relaxed drop-shadow-lg"
+    >
+      We are your trusted guide through the world of freelancing and remote jobs, helping you build a career that fits your life, not the other way around.
+    </motion.p>
+  </motion.div>
+</section>
+
+
 
       {/* POSTS LIST */}
       <section className="max-w-5xl mx-auto mt-16 space-y-10 px-5 pb-20">
-        {posts.slice(1).map((post) => (
+        {posts.slice(0).map((post) => (
           <motion.div
             key={post._id}
             initial={{ opacity: 0, y: 20 }}
@@ -218,7 +197,7 @@ export default function HomePage() {
                     </h3>
                   </Link>
                   <p className="text-gray-600 text-sm line-clamp-2">
-                    {post.content}
+                     {stripHtmlAndImages(post.content)}
                   </p>
                   <div className="flex items-center text-sm text-gray-400 mt-3 gap-2">
                     <span>{post.author}</span>

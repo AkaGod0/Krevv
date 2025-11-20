@@ -25,6 +25,18 @@ interface Post {
   views: number;
 }
 
+
+const stripHtmlAndImages = (html: string) => {
+  if (!html) return "No content";
+  
+  return html
+    .replace(/<img[^>]*>/g, "")       // Remove images first
+    .replace(/<[^>]*>/g, " ")         // Remove all HTML tags
+    .replace(/\s+/g, " ")             // Normalize whitespace
+    .trim()
+    .slice(0, 300)                    // Optional: limit length
+    + (html.length > 300 ? "..." : "");
+};
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,7 +170,9 @@ export default function PostsPage() {
             </Link>
 
             <div className="p-4 sm:p-5 flex flex-col justify-between h-44 sm:h-48">
-              <p className="text-gray-600 text-sm line-clamp-3">{post.content}</p>
+              <p className="text-gray-600 text-sm line-clamp-3">
+  {stripHtmlAndImages(post.content)}
+</p>
 
               <div className="flex flex-wrap justify-between items-center mt-3 gap-2 sm:gap-4">
                 <p className="text-sm font-medium">{post.author}</p>
