@@ -8,8 +8,8 @@ import { cookies } from "next/headers";
 
 export const metadata = {
   title: {
-    default: "krevv — Guide Designed for Digital & Remote workers.",
-    template: "%s | krevv",
+    default: "Krevv — Guide Designed for Digital & Remote workers.",
+    template: "%s | Krevv",
   },
  icons: {
     icon: [
