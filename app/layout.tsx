@@ -1,4 +1,3 @@
-import { GoogleTagManager } from '@/components/GTM';
 import "./globals.css";
 import ConditionalNavbar from "../components/ConditionalNavbar";
 import Footer from "../components/Footer";
@@ -101,12 +100,6 @@ export default async function RootLayout({
         </main>
 
         <Footer />
-         <head>
-        <GoogleTagManager.Head />
-      </head>
-      <body>
-        <GoogleTagManager.Body />
-        <ClientWrapper>{children}</ClientWrapper>
       </body>
     </html>
   );
