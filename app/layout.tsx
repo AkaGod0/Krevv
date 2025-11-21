@@ -1,4 +1,4 @@
-import { GoogleTagManager } from '@/components/GTM';
+import GoogleTagManager from '@/components/GoogleTagManager';
 import "./globals.css";
 import ConditionalNavbar from "../components/ConditionalNavbar";
 import Footer from "../components/Footer";
@@ -86,8 +86,6 @@ export default async function RootLayout({
  <head>
   <GoogleTagManager />
 </head>
-        
-
       <body className="bg-cream text-gray-800 flex flex-col min-h-screen">
 
         <ConditionalNavbar />
