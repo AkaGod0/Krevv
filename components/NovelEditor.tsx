@@ -2,6 +2,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import { FloatingMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
@@ -12,7 +13,6 @@ import ListItem from "@tiptap/extension-list-item";
 import Heading from "@tiptap/extension-heading";
 import Placeholder from "@tiptap/extension-placeholder";
 import Typography from "@tiptap/extension-typography";
-
 
 import {
   BoldIcon,
@@ -26,6 +26,7 @@ import {
   QuoteIcon,
 } from "lucide-react";
 
+import { useState } from "react";
 import type { Editor } from "@tiptap/react";
 
 interface NovelEditorProps {
@@ -35,6 +36,9 @@ interface NovelEditorProps {
 }
 
 const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -52,7 +56,6 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
       OrderedList,
       ListItem,
 
-   
       Typography,
 
       Placeholder.configure({
@@ -89,6 +92,8 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
         class:
           "prose prose-lg max-w-none p-8 min-h-96 focus:outline-none bg-white text-black prose-headings:font-bold prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl prose-a:text-blue-600 prose-img:rounded-xl prose-img:shadow-md prose-img:my-10",
       },
+       editable: () => true
+
     },
 
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -117,11 +122,17 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
     input.click();
   };
 
-  const setLink = () => {
-    const url = window.prompt("Enter URL:", editor?.getAttributes("link").href || "");
-    if (url === null) return;
-    if (url === "") editor?.chain().focus().unsetLink().run();
-    else editor?.chain().focus().setLink({ href: url }).run();
+  const openLinkModal = () => {
+    setLinkUrl(editor?.getAttributes("link").href || "");
+    setLinkModalOpen(true);
+  };
+
+  const applyLink = () => {
+    if (!editor) return;
+    if (!linkUrl) editor.chain().focus().unsetLink().run();
+    else editor.chain().focus().setLink({ href: linkUrl }).run();
+    setLinkModalOpen(false);
+    setLinkUrl("");
   };
 
   if (!editor)
@@ -175,7 +186,7 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
 
           {/* Headings */}
           <button
-          type="button"
+            type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
               editor.isActive("heading", { level: 1 })
@@ -187,7 +198,7 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
           </button>
 
           <button
-          type="button"
+            type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
               editor.isActive("heading", { level: 2 })
@@ -199,7 +210,7 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
           </button>
 
           <button
-          type="button"
+            type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
               editor.isActive("heading", { level: 3 })
@@ -270,7 +281,7 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
           <div className="ml-auto flex gap-2">
             <button
               type="button"
-              onClick={setLink}
+              onClick={openLinkModal}
               className={`p-2.5 rounded-lg transition-all ${
                 editor.isActive("link")
                   ? "bg-purple-600 text-white"
@@ -290,6 +301,82 @@ const NovelEditor = ({ content, onChange, onCreate }: NovelEditorProps) => {
           </div>
         </div>
       </div>
+
+     {editor &&  (
+  <FloatingMenu editor={editor}  className="floating-menu bg-black text-white p-2 rounded-lg shadow z-50">
+    <div className="flex items-center gap-1.5 bg-black p-2 rounded-lg shadow-md border border-gray-800 text-white">
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={`p-2 rounded ${editor.isActive("bold") ? "bg-indigo-600 text-white" : ""}`}
+      >
+        <BoldIcon className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={`p-2 rounded ${editor.isActive("italic") ? "bg-indigo-600 text-white" : ""}`}
+      >
+        <ItalicIcon className="w-4 h-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={`p-2 rounded ${editor.isActive("underline") ? "bg-indigo-600 text-white" : ""}`}
+      >
+        <UnderlineIcon className="w-4 h-4" />
+      </button>
+
+      {/* Headings */}
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} className="p-2 rounded text-sm">H1</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className="p-2 rounded text-sm">H2</button>
+      <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className="p-2 rounded text-sm">H3</button>
+
+      {/* Image */}
+      <button type="button" onClick={addImage} className="p-2 rounded">
+        <ImageIcon className="w-4 h-4" />
+      </button>
+
+      {/* Link */}
+      <button type="button" onClick={openLinkModal} className={`p-2 rounded ${editor.isActive("link") ? "bg-purple-600 text-white" : ""}`}>
+        <Link2Icon className="w-4 h-4" />
+      </button>
+    </div>
+  </FloatingMenu>
+)}
+
+
+      {/* Link Modal */}
+      {linkModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-black rounded-lg p-6 w-96 shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Insert Link</h2>
+            <input
+              type="text"
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Enter URL"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                onClick={() => setLinkModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                onClick={applyLink}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Editor */}
       <EditorContent editor={editor} className="min-h-96 bg-white" />

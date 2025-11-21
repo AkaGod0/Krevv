@@ -309,9 +309,8 @@ export default function EditPostPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 max-w-7xl mx-auto">
         <div className="xl:col-span-2 space-y-8">
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1  gap-6 mb-8">
               <input type="text" placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="p-4 rounded-xl bg-white/90 text-black font-bold text-lg focus:ring-4 focus:ring-purple-500 outline-none" required />
-              <input type="text" placeholder="Slug" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} className="p-4 rounded-xl bg-white/90 text-black outline-none" required />
               <input type="text" placeholder="Category" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="p-4 rounded-xl bg-white/90 text-black outline-none md:col-span-2" required />
             </div>
 
