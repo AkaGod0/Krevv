@@ -16,21 +16,21 @@ body {
 
 /* Headings */
 .tiptap h1 {
-  font-size: 17px;
+  font-size: 2rem;
   font-weight: 700;
-  margin: 1rem 0 1rem;
+  margin: 1.5rem 0 1rem;
 }
 
 .tiptap h2 {
-  font-size: 13px;
+  font-size: 1.7rem;
   font-weight: 600;
   margin: 1.2rem 0 0.8rem;
 }
 
 .tiptap h3 {
-  font-size: 10px;
-  font-weight: 400;
-  margin: 0.5rem 0 0.6rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1rem 0 0.6rem;
 }
 
 /* Paragraph */
