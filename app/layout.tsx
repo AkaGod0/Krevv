@@ -103,6 +103,8 @@ export default async function RootLayout({
         <head>
   <GoogleTagManager />
 </head>
+        <body>
+        <GoogleTagManager.Body />
       </body>
     </html>
   );
