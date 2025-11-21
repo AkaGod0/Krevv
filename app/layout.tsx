@@ -62,7 +62,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "krevv — Guide Designed for Digital & Remote workers.",
+    title: "Krevv — Guide Designed for Digital & Remote workers.",
     description:
       "A guide built for remote professionals and creatives who want to thrive in a digital world.",
     creator: "@yourhandle",
