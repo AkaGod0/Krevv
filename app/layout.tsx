@@ -1,4 +1,4 @@
-import GoogleTagManager from '@/components/GTM';
+import { GoogleTagManager } from '@/components/GTM';
 import "./globals.css";
 import ConditionalNavbar from "../components/ConditionalNavbar";
 import Footer from "../components/Footer";
