@@ -51,6 +51,8 @@ export async function generateMetadata({ params }: any): Promise<Metadata> {
       title: post.title,
       description,
       images: [imageUrl],
+      site: "@mysite",
+      creator: "@mysite",
     },
   };
 }

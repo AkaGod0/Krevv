@@ -166,21 +166,15 @@ if (!post)
           {post.title}
         </motion.h1>
 
-        <p className="text-gray-500 mb-4"> {post.views || 0} views  Category:  {post.category}</p>
+        <p className="text-gray-500 mb-4">
+  {post.views || 0} views ·{" "}
+  <span className="text-blue-600 font-semibold">
+    {post.category}
+  </span>
+</p>
 
-        {/* Keywords */}
-        {Array.isArray(post.keywords) && post.keywords.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            {post.keywords.map((kw: string, idx: number) => (
-              <a
-                key={idx}
-                className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium hover:bg-amber-200 transition"
-              >
-                #{kw}
-              </a>
-            ))}
-          </div>
-        )}
+    
+        
 
         {/* Structured Data */}
        <script
