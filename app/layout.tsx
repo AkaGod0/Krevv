@@ -100,7 +100,7 @@ export default async function RootLayout({
           )}
         </main>
         <Footer />
-        <GoogleTagManager />
+        <GoogleTagManager.Body />
       </body>
         
     </html>
