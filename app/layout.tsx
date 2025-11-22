@@ -84,9 +84,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
 
-      <head>
-  <GoogleTagManager />
-</head>
+
       <body className="bg-cream text-gray-800 flex flex-col min-h-screen">
 
         <ConditionalNavbar />
@@ -104,6 +102,9 @@ export default async function RootLayout({
         <Footer />
         
       </body>
+          <head>
+  <GoogleTagManager />
+</head>
     </html>
   );
 }
