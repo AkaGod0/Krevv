@@ -83,7 +83,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-
+    <GoogleTagManager.Head />
 
       <body className="bg-cream text-gray-800 flex flex-col min-h-screen">
 
