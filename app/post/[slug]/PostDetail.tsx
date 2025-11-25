@@ -18,53 +18,48 @@ export default function PostDetail({ slug }: { slug: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
- useEffect(() => {
-  async function fetchPost() {
-    try {
-      const postRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/slug/${slug}`);
-      const ipRes = fetch("https://api.ipify.org?format=json");
+  useEffect(() => {
+    async function fetchPost() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/slug/${slug}`);
+        const data = await res.json();
+        const postData = data.post || data;
 
-      const [postDataRes, ipData] = await Promise.all([postRes, ipRes]);
-      const data = await postDataRes.json();
-      const ip = (await ipData.json()).ip;
+        setPost({ ...postData, views: (postData.views || 0) + 1 });
+        setLikesCount(postData.likes?.length || 0);
 
-      const postData = data.post || data;
-      setPost({ ...postData, views: (postData.views || 0) + 1 });
-      setLikesCount(postData.likes?.length || 0);
+        // FIXED: Get FULL nested comments
+        const commentsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments/${postData._id}`);
+        const commentsData = await commentsRes.json();
+        setComments(commentsData || []);
 
-      // Start fetching comments, related, trending, liked in parallel
-      const commentsRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments/${postData._id}`);
-      const relatedRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${postData._id}/related`);
-      const allPostsRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
-      const likedRes = fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/likes/${postData._id}/check?ip=${ip}`
-      );
+        // Related posts
+        const relatedRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/${postData._id}/related`
+        );
+        const relatedData = await relatedRes.json();
+        setRelatedPosts(relatedData.related || relatedData);
 
-      const [commentsData, relatedData, allPostsData, likedData] = await Promise.all([
-        (await commentsRes).json(),
-        (await relatedRes).json(),
-        (await allPostsRes).json(),
-        (await likedRes).json(),
-      ]);
+        // Trending posts
+        const trendingRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/trending`);
+const trendingData = await trendingRes.json();
+setTrendingPosts(trendingData.trending || trendingData);
 
-      setComments(commentsData || []);
-      setRelatedPosts(relatedData.related || relatedData);
 
-      const allPostsList = allPostsData.posts || allPostsData;
-      const trendingList = allPostsList
-        .filter((p: any) => p._id !== postData._id)
-        .sort((a: any, b: any) => (b.views || 0) - (a.views || 0))
-        .slice(0, 5);
-      setTrendingPosts(trendingList);
-
-      setLiked(likedData.liked);
-    } catch (err) {
-      console.error(err);
+        // // Check like status
+        // const ipRes = await fetch("https://api.ipify.org?format=json");
+        // const ipData = await ipRes.json();
+        // const likedRes = await fetch(
+        //   `${process.env.NEXT_PUBLIC_API_URL}/likes/${postData._id}/check?ip=${ipData.ip}`
+        // );
+        // const likedData = await likedRes.json();
+        // setLiked(likedData.liked);
+      } catch (err) {
+        console.error("Failed to fetch post details:", err);
+      }
     }
-  }
-
-  fetchPost();
-}, [slug]);
+    fetchPost();
+  }, [slug]);
 
   const handleLike = async () => {
     if (!post?._id) return;
@@ -297,121 +292,183 @@ if (!post)
         </div>
 
         {/* Related Posts */}
-        {Array.isArray(relatedPosts) && relatedPosts.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Related Posts</h2>
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
-              {relatedPosts.map((related, index) => (
-                <motion.a
-                  key={index}
-                  href={`/post/${related.slug}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="block bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform overflow-hidden"
-                >
-                  <img
-                    src={related.image}
-                    alt={related.title}
-                    className="w-full h-40 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">
-                      {related.title}
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-2 line-clamp-3">
-                       {related.views || 0} views
-                    </p>
-                  </div>
-                </motion.a>
-              ))}
+       {Array.isArray(relatedPosts) && (
+  <div className="mt-12">
+    <h2 className="text-2xl font-bold mb-6 text-gray-800">Related Posts</h2>
+    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+      {relatedPosts.length === 0 ? (
+        // LOADING PLACEHOLDERS
+        Array.from({ length: 3 }).map((_, idx) => (
+          <div
+            key={idx}
+            className="animate-pulse bg-gray-200 rounded-lg h-48"
+          ></div>
+        ))
+      ) : (
+        relatedPosts.map((related, index) => (
+          <motion.a
+            key={index}
+            href={`/post/${related.slug}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="block bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform overflow-hidden"
+          >
+            <img
+              src={related.image}
+              alt={related.title}
+              className="w-full h-40 object-cover"
+            />
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">
+                {related.title}
+              </h3>
+              <p className="text-sm text-gray-500 mt-2 line-clamp-3">
+                {related.views || 0} views
+              </p>
             </div>
-          </div>
-        )}
+          </motion.a>
+        ))
+      )}
+    </div>
+  </div>
+)}
       </div>
 
       {/* Sidebar Trending */}
       <aside className="w-full lg:w-80 flex-shrink-0 mt-8 lg:mt-0">
-        <h3 className="text-xl font-bold mb-4">Most Trending</h3>
+  <h3 className="text-xl font-bold mb-4">Most Trending</h3>
+<div className="mb-6 relative">
+  <input
+    type="text"
+    placeholder="Search posts..."
+    value={searchQuery}
+    onChange={(e) => {
+      const value = e.target.value;
+      setSearchQuery(value);
 
-        <div className="mb-6 relative">
-          <input
-            type="text"
-            placeholder="Search posts..."
-            value={searchQuery}
-            onChange={async (e) => {
-              const query = e.target.value;
-              setSearchQuery(query);
+      if (!value.trim()) {
+        setSearchResults([]);
+        return;
+      }
 
-              if (!query.trim()) {
-                setSearchResults([]);
-                return;
-              }
+      // Cancel previous timeout
+      if ((window as any).searchTimeout) clearTimeout((window as any).searchTimeout);
 
-              try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
-                const data = await res.json();
-             // Make sure we have an array
-const allPosts = Array.isArray(data.posts)
-  ? data.posts
-  : Array.isArray(data)
-  ? data
-  : [];
+      // Debounce 300ms
+      (window as any).searchTimeout = setTimeout(async () => {
+        try {
+          // Force search to match from the START of title
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/posts/search?q=${encodeURIComponent(value.trim())}&startsWith=true`
+          );
 
-                const filtered = allPosts.filter((p: any) => {
-                  const lower = query.toLowerCase();
-                  return (
-                    p.title?.toLowerCase().includes(lower) ||
-                    p.keywords?.some((k: string) => k.toLowerCase().includes(lower))
-                  );
-                });
+          if (!res.ok) {
+            setSearchResults([]);
+            return;
+          }
 
-                setSearchResults(filtered.slice(0, 6));
-              } catch (err) {
-                console.error("Search failed:", err);
-              }
-            }}
-            className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          const data = await res.json();
 
-          {searchResults.length > 0 && (
-            <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-md mt-1 w-full max-h-64 overflow-y-auto">
-              {searchResults.map((result, idx) => (
-                <a
-                  key={idx}
-                  href={`/post/${result.slug}`}
-                  className="block px-3 py-2 hover:bg-amber-50 border-b last:border-none transition"
-                >
-                  <p className="text-gray-800 font-medium line-clamp-1">{result.title}</p>
-                  <p className="text-sm text-gray-500 line-clamp-1">
-                    {Array.isArray(result.keywords) ? result.keywords.join(", ") : ""}
-                  </p>
-                </a>
-              ))}
-            </div>
+          // Support any response shape
+          let results: any[] = [];
+          if (Array.isArray(data)) results = data;
+          else if (data.posts) results = data.posts;
+          else if (data.results) results = data.results;
+          else if (data.data) results = data.data;
+
+          setSearchResults(results.slice(0, 8));
+        } catch (err) {
+          console.error("Search failed:", err);
+          setSearchResults([]);
+        }
+      }, 300);
+    }}
+    onBlur={() => {
+      setTimeout(() => setSearchResults([]), 200);
+    }}
+    className="w-full border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+  />
+
+  {/* Loading */}
+  {searchQuery.trim() && searchResults.length === 0 && (
+    <div className="absolute inset-x-0 top-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-6 text-center z-50">
+      <div className="flex items-center justify-center gap-2">
+        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-gray-500 text-sm">Searching...</span>
+      </div>
+    </div>
+  )}
+
+  {/* Results Dropdown */}
+  {searchResults.length > 0 && (
+    <div className="absolute inset-x-0 top-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-96 overflow-y-auto z-50">
+      {searchResults.map((post) => (
+        <a
+          key={post._id || post.id}
+          href={`/post/${post.slug}`}
+          onMouseDown={(e) => e.preventDefault()} 
+          onClick={() => {
+            setSearchResults([]);
+            setSearchQuery("");
+          }}
+          className="flex items-center gap-4 px-4 py-3 hover:bg-amber-50 border-b border-gray-100 last:border-b-0 transition"
+        >
+          {post.image && (
+            <img
+              src={post.image}
+              alt={post.title}
+              className="w-12 h-12 object-cover rounded-md flex-shrink-0"
+            />
           )}
-        </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-800 truncate">{post.title}</p>
+            <p className="text-xs text-gray-500">
+              {post.views || 0} views • {post.category || "General"}
+            </p>
+          </div>
+        </a>
+      ))}
+    </div>
+  )}
 
-        <div className="space-y-4">
-          {trendingPosts.length > 0 ? (
-            trendingPosts.map((t: any, idx: number) => (
-              <motion.a
-                key={idx}
-                href={`/post/${t.slug}`}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="block bg-white p-3 rounded-md shadow hover:shadow-md hover:bg-amber-50 transition-all"
-              >
-                <h4 className="font-semibold text-gray-800 line-clamp-2">{t.title}</h4>
-                <p className="text-sm text-gray-500"> {t.views || 0} views</p>
-              </motion.a>
-            ))
-          ) : (
-            <p className="text-gray-500">No trending posts found.</p>
-          )}
-        </div>
-      </aside>
+  {/* No results */}
+  {searchQuery.trim() && searchResults.length === 0 && (
+    <div className="absolute inset-x-0 top-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-6 text-center z-50">
+      <p className="text-gray-500 text-sm">
+        No posts found starting with "<strong>{searchQuery}</strong>"
+      </p>
+    </div>
+  )}
+</div>
+
+  <div className="space-y-4">
+  {trendingPosts.length === 0 ? (
+    // LOADING PLACEHOLDERS
+    Array.from({ length: 5 }).map((_, idx) => (
+      <div
+        key={idx}
+        className="animate-pulse bg-gray-200 h-20 rounded-md"
+      ></div>
+    ))
+  ) : (
+    trendingPosts.map((t: any, idx: number) => (
+      <motion.a
+        key={idx}
+        href={`/post/${t.slug}`}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: idx * 0.05 }}
+        className="block bg-white p-3 rounded-md shadow hover:shadow-md hover:bg-amber-50 transition-all"
+      >
+        <h4 className="font-semibold text-gray-800 line-clamp-2">{t.title}</h4>
+        <p className="text-sm text-gray-500">{t.views || 0} views</p>
+      </motion.a>
+    ))
+  )}
+</div>
+</aside>
+
     </div>
   );
 }

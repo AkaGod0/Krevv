@@ -13,17 +13,39 @@ export default function AdminHomePage() {
     totalViews: 0, // ← NEW: Total Page Views
   });
 
-  useEffect(() => {
+ useEffect(() => {
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API}/posts`);
+      // Request all posts, remove limit if your API allows it
+      const res = await fetch(`${API}/posts?limit=0`); // <-- 'limit=0' often means fetch all
       const data = await res.json();
 
       const postsArray = Array.isArray(data.data) ? data.data : [];
 
-      const totalLikes = postsArray.reduce((acc: number, post: any) => acc + (post.likes?.length || 0), 0);
-      const totalComments = postsArray.reduce((acc: number, post: any) => acc + (post.comments?.length || 0), 0);
-      const totalViews = postsArray.reduce((acc: number, post: any) => acc + (post.views || 0), 0);
+      const totalLikes = postsArray.reduce(
+        (acc: number, post: any) => acc + (post.likes?.length || 0),
+        0
+      );
+       // Calculate total comments by fetching per post
+        const totalCommentsArray = await Promise.all(
+          postsArray.map(async (post: { _id: any; }) => {
+            try {
+              const commentsRes = await fetch(`${API}/comments/${post._id}`);
+              const commentsData = await commentsRes.json();
+              return Array.isArray(commentsData) ? commentsData.length : 0;
+            } catch (err) {
+              console.error(`Failed to fetch comments for post ${post._id}:`, err);
+              return 0;
+            }
+          })
+        );
+
+        const totalComments = totalCommentsArray.reduce((acc, num) => acc + num, 0);
+        
+      const totalViews = postsArray.reduce(
+        (acc: number, post: any) => acc + (post.views || 0),
+        0
+      );
 
       setStats({
         totalPosts: postsArray.length,
