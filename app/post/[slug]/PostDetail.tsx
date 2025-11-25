@@ -18,53 +18,53 @@ export default function PostDetail({ slug }: { slug: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  useEffect(() => {
-    async function fetchPost() {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/slug/${slug}`);
-        const data = await res.json();
-        const postData = data.post || data;
+ useEffect(() => {
+  async function fetchPost() {
+    try {
+      const postRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/slug/${slug}`);
+      const ipRes = fetch("https://api.ipify.org?format=json");
 
-        setPost({ ...postData, views: (postData.views || 0) + 1 });
-        setLikesCount(postData.likes?.length || 0);
+      const [postDataRes, ipData] = await Promise.all([postRes, ipRes]);
+      const data = await postDataRes.json();
+      const ip = (await ipData.json()).ip;
 
-        // FIXED: Get FULL nested comments
-        const commentsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments/${postData._id}`);
-        const commentsData = await commentsRes.json();
-        setComments(commentsData || []);
+      const postData = data.post || data;
+      setPost({ ...postData, views: (postData.views || 0) + 1 });
+      setLikesCount(postData.likes?.length || 0);
 
-        // Related posts
-        const relatedRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/posts/${postData._id}/related`
-        );
-        const relatedData = await relatedRes.json();
-        setRelatedPosts(relatedData.related || relatedData);
+      // Start fetching comments, related, trending, liked in parallel
+      const commentsRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments/${postData._id}`);
+      const relatedRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${postData._id}/related`);
+      const allPostsRes = fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
+      const likedRes = fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/likes/${postData._id}/check?ip=${ip}`
+      );
 
-        // Trending posts
-        const allPostsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
-        const allPostsData = await allPostsRes.json();
-        const allPostsList = allPostsData.posts || allPostsData;
+      const [commentsData, relatedData, allPostsData, likedData] = await Promise.all([
+        (await commentsRes).json(),
+        (await relatedRes).json(),
+        (await allPostsRes).json(),
+        (await likedRes).json(),
+      ]);
 
-        const trendingList = allPostsList
-          .filter((p: any) => p._id !== postData._id)
-          .sort((a: any, b: any) => (b.views || 0) - (a.views || 0))
-          .slice(0, 5);
-        setTrendingPosts(trendingList);
+      setComments(commentsData || []);
+      setRelatedPosts(relatedData.related || relatedData);
 
-        // Check like status
-        const ipRes = await fetch("https://api.ipify.org?format=json");
-        const ipData = await ipRes.json();
-        const likedRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/likes/${postData._id}/check?ip=${ipData.ip}`
-        );
-        const likedData = await likedRes.json();
-        setLiked(likedData.liked);
-      } catch (err) {
-        console.error("Failed to fetch post details:", err);
-      }
+      const allPostsList = allPostsData.posts || allPostsData;
+      const trendingList = allPostsList
+        .filter((p: any) => p._id !== postData._id)
+        .sort((a: any, b: any) => (b.views || 0) - (a.views || 0))
+        .slice(0, 5);
+      setTrendingPosts(trendingList);
+
+      setLiked(likedData.liked);
+    } catch (err) {
+      console.error(err);
     }
-    fetchPost();
-  }, [slug]);
+  }
+
+  fetchPost();
+}, [slug]);
 
   const handleLike = async () => {
     if (!post?._id) return;
@@ -351,7 +351,12 @@ if (!post)
               try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
                 const data = await res.json();
-                const allPosts = data.posts || data;
+             // Make sure we have an array
+const allPosts = Array.isArray(data.posts)
+  ? data.posts
+  : Array.isArray(data)
+  ? data
+  : [];
 
                 const filtered = allPosts.filter((p: any) => {
                   const lower = query.toLowerCase();

@@ -47,8 +47,9 @@ export default function HomePage() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
-        const all = res.data || [];
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/posts?page=1&limit=10`);
+        const all = res.data.data || [];
+
         const postsWithCounts = await Promise.all(
           all.slice(0, 10).map(async (post: Post) => {
             try {
@@ -196,9 +197,7 @@ export default function HomePage() {
                       {post.title}
                     </h3>
                   </Link>
-                  <p className="text-gray-600 text-sm line-clamp-2">
-                     {stripHtmlAndImages(post.content)}
-                  </p>
+                 
                   <div className="flex items-center text-sm text-gray-400 mt-3 gap-2">
                     <span>{post.author}</span>
                     <span>{new Date(post.createdAt).toLocaleDateString()}</span>

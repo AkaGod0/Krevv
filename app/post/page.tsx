@@ -53,7 +53,7 @@ export default function PostsPage() {
         const res = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/posts?page=${page}&limit=${limit}`
         );
-        const all = res.data.posts || res.data || [];
+        const all = Array.isArray(res.data.data) ? res.data.data : [];
         setTotalPosts(res.data.total || all.length);
 
         const postsWithCounts = await Promise.all(
@@ -112,6 +112,12 @@ export default function PostsPage() {
     }
   };
 
+ // Scroll to top on page change
+useEffect(() => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}, [page]);
+
+
   // Auto hide copy modal
   useEffect(() => {
     if (!copyMessage) return;
@@ -142,7 +148,7 @@ export default function PostsPage() {
       {/* POSTS GRID */}
       <motion.div
         layout
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 max-w-7xl mx-auto"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-5 lg:gap-10 max-w-7xl mx-auto"
       >
         {posts.map((post, index) => (
           <motion.div
@@ -169,10 +175,10 @@ export default function PostsPage() {
               </div>
             </Link>
 
-            <div className="p-4 sm:p-5 flex flex-col justify-between h-44 sm:h-48">
-              <p className="text-gray-600 text-sm line-clamp-3">
+            <div className="p-4 sm:p-5 flex flex-col justify-between">
+              {/* <p className="text-gray-600 text-sm line-clamp-3">
   {stripHtmlAndImages(post.content)}
-</p>
+</p> */}
 
               <div className="flex flex-wrap justify-between items-center mt-3 gap-2 sm:gap-4">
                 <p className="text-sm font-medium">{post.author}</p>
