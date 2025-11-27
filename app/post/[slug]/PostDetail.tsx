@@ -46,14 +46,14 @@ const trendingData = await trendingRes.json();
 setTrendingPosts(trendingData.trending || trendingData);
 
 
-        // // Check like status
-        // const ipRes = await fetch("https://api.ipify.org?format=json");
-        // const ipData = await ipRes.json();
-        // const likedRes = await fetch(
-        //   `${process.env.NEXT_PUBLIC_API_URL}/likes/${postData._id}/check?ip=${ipData.ip}`
-        // );
-        // const likedData = await likedRes.json();
-        // setLiked(likedData.liked);
+        // Check like status
+        const ipRes = await fetch("https://api.ipify.org?format=json");
+        const ipData = await ipRes.json();
+        const likedRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/likes/${postData._id}/check?ip=${ipData.ip}`
+        );
+        const likedData = await likedRes.json();
+        setLiked(likedData.liked);
       } catch (err) {
         console.error("Failed to fetch post details:", err);
       }

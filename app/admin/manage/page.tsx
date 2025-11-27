@@ -16,7 +16,12 @@ export default function ManagePostsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
-  // 👉 Pagination State
+  // Search states
+  const [searchText, setSearchText] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Pagination
   const [page, setPage] = useState(1);
   const [limit] = useState(12);
   const [total, setTotal] = useState(0);
@@ -37,7 +42,6 @@ export default function ManagePostsPage() {
     try {
       const res = await fetch(`${API}/posts?page=${page}&limit=${limit}`);
       const json = await res.json();
-
       setPosts(Array.isArray(json.data) ? json.data : []);
       setTotal(json.total || 0);
     } catch (err) {
@@ -64,7 +68,6 @@ export default function ManagePostsPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setPosts(posts.filter((p) => p._id !== postToDelete));
       setMessage("🗑️ Post deleted");
       setTimeout(() => setMessage(""), 3000);
@@ -76,6 +79,57 @@ export default function ManagePostsPage() {
     }
   };
 
+  // Search posts
+  // Search posts — NOW SHOWS ALL MATCHING POSTS (not limited by pagination)
+// SEARCH — show ALL results that contain the text
+useEffect(() => {
+  if (!searchText.trim()) {
+    fetchPosts(); 
+    setSuggestions([]);
+    setShowSuggestions(false);
+    return;
+  }
+
+  const delay = setTimeout(async () => {
+    try {
+
+      // Fetch ALL posts that match the query (no limit)
+      const res = await fetch(
+        `${API}/posts/search?q=${encodeURIComponent(searchText.trim())}&all=true`
+      );
+
+      const json = await res.json();
+
+      let results: any[] = [];
+      if (Array.isArray(json)) results = json;
+      else if (json.posts) results = json.posts;
+      else if (json.results) results = json.results;
+      else if (json.data) results = json.data;
+
+      // CLIENT-SIDE FILTER: matches EXACT typed text anywhere in title
+      const exactMatches = results.filter((p) =>
+        p.title.toLowerCase().includes(searchText.toLowerCase())
+      );
+
+      // Show ALL matching posts in the manager list
+      setPosts(exactMatches);
+
+      // Show ALL in dropdown (not only 8)
+      setSuggestions(exactMatches);
+
+      setShowSuggestions(true);
+
+    } catch (err) {
+      console.error(err);
+      setSuggestions([]);
+    }
+  }, 300);
+
+  return () => clearTimeout(delay);
+}, [searchText]);
+
+
+
   const totalPages = Math.ceil(total / limit);
 
   return (
@@ -84,6 +138,57 @@ export default function ManagePostsPage() {
         Manage All Posts ✨
       </h1>
 
+      {/* SEARCH BAR */}
+      <div className="mb-6 relative max-w-xl mx-auto">
+        <input
+          type="text"
+          placeholder="Search posts..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          className="w-full border border-gray-300 p-3 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+        />
+
+        {showSuggestions && (
+          <div className="absolute inset-x-0 top-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-96 overflow-y-auto z-50">
+            {suggestions.length > 0 ? (
+              suggestions.map((post) => (
+                <div
+                  key={post._id || post.id}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setPosts([post]); // display selected post
+                    setSearchText(post.title);
+                    setSuggestions([]);
+                    setShowSuggestions(false);
+                  }}
+                  className="flex items-center gap-4 px-4 py-3 hover:bg-amber-50 border-b border-gray-100 last:border-b-0 transition cursor-pointer"
+                >
+                  {post.image && (
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-12 h-12 object-cover rounded-md flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-800 truncate">{post.title}</p>
+                    <p className="text-xs text-gray-500">
+                      {post.views || 0} views • {post.category || "General"}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-gray-500 text-sm">
+                No posts found starting with "<strong>{searchText}</strong>"
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* MESSAGE TOAST */}
       {message && (
         <motion.div
           initial={{ opacity: 0, x: 50, y: 50 }}
@@ -95,6 +200,7 @@ export default function ManagePostsPage() {
         </motion.div>
       )}
 
+      {/* POSTS GRID */}
       {loading ? (
         <div className="flex flex-col justify-center items-center py-20 space-y-4">
           <div className="w-12 h-12 border-4 border-t-purple-500 border-b-pink-500 border-l-transparent border-r-transparent rounded-full animate-spin"></div>
@@ -104,7 +210,6 @@ export default function ManagePostsPage() {
         </div>
       ) : (
         <>
-          {/* POSTS GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {posts.map((post) => (
               <motion.div
@@ -120,7 +225,6 @@ export default function ManagePostsPage() {
                     className="w-full h-40 sm:h-48 object-cover rounded-xl mb-4"
                   />
                 )}
-
                 <h3 className="text-2xl sm:text-4xl font-bold mb-2">{post.title}</h3>
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">{post.slug}</h3>
                 <h3 className="text-xl sm:text-2xl font-bold mb-2">{post.category}</h3>
@@ -164,11 +268,9 @@ export default function ManagePostsPage() {
             >
               ← Prev
             </button>
-
             <span className="text-lg font-semibold">
               Page {page} / {totalPages}
             </span>
-
             <button
               disabled={page === totalPages}
               onClick={() => {
@@ -176,9 +278,7 @@ export default function ManagePostsPage() {
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               className={`px-4 py-2 rounded-lg ${
-                page === totalPages
-                  ? "bg-gray-700 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700"
+                page === totalPages ? "bg-gray-700 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
               }`}
             >
               Next →
@@ -187,6 +287,7 @@ export default function ManagePostsPage() {
         </>
       )}
 
+      {/* DELETE MODAL */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <motion.div
@@ -199,7 +300,6 @@ export default function ManagePostsPage() {
             <p className="text-gray-700 mb-4 sm:mb-6 text-sm sm:text-base">
               Are you sure you want to delete this post? This action cannot be undone.
             </p>
-
             <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
               <button
                 onClick={() => setModalOpen(false)}
@@ -207,7 +307,6 @@ export default function ManagePostsPage() {
               >
                 Cancel
               </button>
-
               <button
                 onClick={confirmDelete}
                 className="px-3 sm:px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm sm:text-base"
