@@ -286,10 +286,10 @@ export default function AboutPage() {
             Browse Jobs
           </Link>
           <Link
-            href="/post-job"
+            href="/post"
             className="inline-block bg-white text-yellow-700 border-2 border-yellow-700 px-8 py-4 rounded-full font-semibold hover:bg-yellow-50 transition-all duration-300 shadow-lg hover:shadow-2xl"
           >
-            Post a Job
+            Browse Posts
           </Link>
         </div>
       </section>

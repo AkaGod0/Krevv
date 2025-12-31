@@ -24,6 +24,7 @@ interface Job {
   _id: string;
   title: string;
   company: string;
+  slug:string;
   location: string;
   salary: string;
   type: string;
@@ -300,7 +301,7 @@ export default function AdminJobsPage() {
                   </div>
 
                   <div className="flex flex-row lg:flex-col gap-2">
-                    <Link href={`/jobs/${job._id}`} className="flex-1">
+                    <Link href={`/jobs/${job.slug}`} className="flex-1">
                       <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2">
                         <Eye size={18} />
                         View
