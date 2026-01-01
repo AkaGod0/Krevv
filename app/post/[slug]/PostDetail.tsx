@@ -193,14 +193,18 @@ export default function PostDetail({ slug }: { slug: string }) {
             </div>
           )}
 
-          <motion.img
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            src={post.image}
-            alt={post.title}
-            className="w-full rounded-lg shadow-md mb-4 sm:mb-6"
-          />
+       <motion.div
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5 }}
+  className="w-full aspect-video overflow-hidden rounded-lg shadow-md mb-4 sm:mb-6"
+>
+  <img
+    src={post.image}
+    alt={post.title}
+    className="w-full h-full object-cover"
+  />
+</motion.div>
 
           <motion.h1
             initial={{ opacity: 0 }}

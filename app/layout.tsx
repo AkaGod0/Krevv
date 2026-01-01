@@ -33,11 +33,11 @@ export const metadata = {
     "creative writing",
     "lifestyle",
   ],
-  metadataBase: new URL("https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev"),
+  metadataBase: new URL("https://krevv.com"),
   authors: [
     {
       name: "Krevv Team",
-      url: "https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev",
+      url: "https://krevv.com",
     },
   ],
   creator: "Krevv",
@@ -51,7 +51,7 @@ export const metadata = {
     siteName: "krevv",
     images: [
       {
-        url: "https://krevv.com/krevv.png",
+        url: "/krevv.png",
         width: 1200,
         height: 630,
         alt: "My Blog preview image",
@@ -66,7 +66,7 @@ export const metadata = {
     description:
       "A guide built for remote professionals and creatives who want to thrive in a digital world.",
     creator: "@yourhandle",
-    images: ["https://cautious-eureka-9gp9qvgv756fpjgr-3000.app.github.dev/krevv.png"],
+    images: "/krevv.png",
   },
   alternates: {
     canonical: "https://krevv.com",
