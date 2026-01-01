@@ -9,7 +9,7 @@ import { AdminProvider } from "../app/admin/context/AdminContext"; // ✅ Add th
 
 export const metadata = {
   title: {
-    default: "krevv — Guide Designed for Digital & Remote workers.",
+    default: "Marketplace for Modern Work, Verified Jobs & Trusted Talent.",
     template: "%s | krevv",
   },
   icons: {
@@ -23,7 +23,7 @@ export const metadata = {
   },
   manifest: "/site.webmanifest",
   description:
-    "A guide built for remote professionals and creatives who want to thrive in a digital world.",
+    "Discover verified jobs, hire trusted talent, and access a reliable marketplace designed to make work simple, secure, and efficient for everyone.",
   keywords: [
     "blog",
     "stories",
@@ -44,9 +44,9 @@ export const metadata = {
   publisher: "Krevv",
   robots: { index: true, follow: true },
   openGraph: {
-    title: "krevv — Guide Designed for Digital & Remote workers",
+    title: "Marketplace for Modern Work, Verified Jobs & Trusted Talent.",
     description:
-      "A guide built for remote professionals and creatives who want to thrive in a digital world.",
+      "Discover verified jobs, hire trusted talent, and access a reliable marketplace designed to make work simple, secure, and efficient for everyone.",
     url: "https://krevv.com",
     siteName: "krevv",
     images: [
@@ -62,9 +62,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "krevv — Guide Designed for Digital & Remote workers.",
+    title: "Marketplace for Modern Work, Verified Jobs & Trusted Talent.",
     description:
-      "A guide built for remote professionals and creatives who want to thrive in a digital world.",
+      "Discover verified jobs, hire trusted talent, and access a reliable marketplace designed to make work simple, secure, and efficient for everyone.",
     creator: "@yourhandle",
     images: "/krevv.png",
   },
