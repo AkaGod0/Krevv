@@ -12,7 +12,7 @@ export default function Footer() {
               Krevv
             </h3>
             <p className="text-gray-300 text-sm mb-4">
-              Your trusted job posting and aggregation platform. Connecting employers with qualified candidates.
+              Your trusted marketplace for job posting, freelancing and aggregation platform. Connecting employers with qualified candidates.
             </p>
             <p className="text-gray-400 text-xs">
               © {new Date().getFullYear()} Krevv. All rights reserved.
