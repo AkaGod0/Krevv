@@ -1,4 +1,10 @@
 [[redirects]]
+  from = "krevv.com*"
+  to = "https://www.krevv.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "http://krevv.com/*"
   to = "https://www.krevv.com/:splat"
   status = 301
