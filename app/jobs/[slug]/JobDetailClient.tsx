@@ -17,12 +17,15 @@ import {
   Calendar,
   Star,
   Share2,
+  Flag,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, api } from "@/app/context/AuthContext";
 import UserProfileCard from "@/components/UserProfileCard";
 import JobReviews from "@/components/JobReviews";
+import ReportJobModal from "@/components/Reportjobmodal";
 
 interface Job {
   _id: string;
@@ -34,6 +37,7 @@ interface Job {
   salary: string;
   type: string;
   status: string;
+  category: string; // ✅ NEW: Category field
   experienceLevel: string;
   requirements: string[];
   responsibilities: string[];
@@ -63,6 +67,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
   const [hasApplied, setHasApplied] = useState(false);
   const [checkingApplication, setCheckingApplication] = useState(false);
   const [toast, setToast] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false); // ✅ NEW: Report modal state
 
   useEffect(() => {
     fetchJob();
@@ -177,6 +182,18 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
     }
   };
 
+  // ✅ NEW: Handle Report Job
+  const handleReportJob = () => {
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
+      }
+      router.push("/login");
+      return;
+    }
+    setShowReportModal(true);
+  };
+
   const getJobTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       full_time: "bg-green-100 text-green-700 border-green-300",
@@ -213,7 +230,19 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
 
   return (
     <main className="bg-[#fffaf6] min-h-screen text-gray-800">
-      {/* ✅ Toast Notification */}
+      {/* ✅ Report Job Modal */}
+      <ReportJobModal
+        jobId={job._id}
+        jobTitle={job.title}
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSuccess={() => {
+          setToast("Report submitted successfully!");
+          setTimeout(() => setToast(""), 3000);
+        }}
+      />
+
+      {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -253,6 +282,10 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
               >
                 {job.type.replace("_", " ").toUpperCase()}
               </span>
+              {/* ✅ Display category badge */}
+              <span className="px-2.5 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-semibold bg-purple-100 text-purple-700 border border-purple-300">
+                {job.category}
+              </span>
               <span className="text-amber-100 text-xs sm:text-sm">
                 Posted {new Date(job.createdAt).toLocaleDateString()}
               </span>
@@ -290,7 +323,6 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
         </div>
       </section>
 
-      {/* Rest of your component - keep all existing code exactly as is */}
       <section className="max-w-5xl mx-auto px-4 sm:px-5 py-8 sm:py-10 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Main Content */}
@@ -541,6 +573,17 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
               )}
 
               <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-gray-200">
+                {/* ✅ Category Display */}
+                <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
+                  <Tag size={18} className="text-purple-500 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-500">Category</p>
+                    <p className="font-semibold text-xs sm:text-sm truncate">
+                      {job.category}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
                   <Calendar size={18} className="text-amber-500 flex-shrink-0" />
                   <div className="min-w-0">
@@ -597,10 +640,19 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
               </p>
               <button
                 onClick={handleShareJob}
-                className="w-full bg-white hover:bg-gray-50 text-amber-600 border border-amber-300 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="w-full bg-white hover:bg-gray-50 text-amber-600 border border-amber-300 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base mb-2"
               >
                 <Share2 size={16} className="sm:w-4 sm:h-4" />
                 Copy Link
+              </button>
+
+              {/* ✅ NEW: Report Job Button */}
+              <button
+                onClick={handleReportJob}
+                className="w-full bg-white hover:bg-red-50 text-red-600 border border-red-300 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base"
+              >
+                <Flag size={16} className="sm:w-4 sm:h-4" />
+                Report Job
               </button>
             </motion.div>
           </div>

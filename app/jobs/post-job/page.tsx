@@ -12,6 +12,7 @@ import {
   X,
   Loader2,
   CheckCircle,
+  Tag,
 } from "lucide-react";
 import { useAuth,api } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -30,10 +31,35 @@ export default function PostJobPage() {
     salary: "",
     type: "full_time",
     experienceLevel: "Mid-level",
+    category: "Technology", // ✅ NEW: Category field
     description: "",
     requirements: [""],
     responsibilities: [""],
   });
+
+  // ✅ NEW: Categories array
+  const categories = [
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Marketing',
+    'Sales',
+    'Design',
+    'Engineering',
+    'Customer Service',
+    'Human Resources',
+    'Operations',
+    'Legal',
+    'Construction',
+    'Hospitality',
+    'Retail',
+    'Transportation',
+    'Manufacturing',
+    'Agriculture',
+    'Real Estate',
+    'Other'
+  ];
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -234,6 +260,32 @@ export default function PostJobPage() {
                     className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* ✅ NEW: Category Field */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Job Category *
+              </label>
+              <div className="relative">
+                <Tag
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  required
+                  className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none appearance-none bg-white"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

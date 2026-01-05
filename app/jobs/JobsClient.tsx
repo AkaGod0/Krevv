@@ -15,6 +15,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,6 +26,7 @@ interface Job {
   description: string;
   company: string;
   location: string;
+  category: string;
   salary: string;
   type: string;
   status: string;
@@ -44,11 +46,36 @@ export default function JobsClient() {
   const [filters, setFilters] = useState({
     type: "",
     location: "",
+    category: "", // ✅ NEW: Category filter
     experienceLevel: "",
   });
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 12;
+
+  // ✅ NEW: Categories array
+  const categories = [
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Marketing',
+    'Sales',
+    'Design',
+    'Engineering',
+    'Customer Service',
+    'Human Resources',
+    'Operations',
+    'Legal',
+    'Construction',
+    'Hospitality',
+    'Retail',
+    'Transportation',
+    'Manufacturing',
+    'Agriculture',
+    'Real Estate',
+    'Other'
+  ];
 
   useEffect(() => {
     fetchJobs();
@@ -64,21 +91,17 @@ export default function JobsClient() {
         `${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active`
       );
       
-      // ✅ Extract data array from paginated response
       const jobsData = res.data?.data || res.data || [];
-      
-      // ✅ Ensure it's an array before setting
       setJobs(Array.isArray(jobsData) ? jobsData : []);
     } catch (err) {
       console.error("Error fetching jobs:", err);
-      setJobs([]); // ✅ Set empty array on error
+      setJobs([]);
     } finally {
       setLoading(false);
     }
   };
 
   const filterJobs = () => {
-    // ✅ Ensure jobs is an array before filtering
     let filtered = Array.isArray(jobs) ? [...jobs] : [];
 
     if (searchTerm) {
@@ -100,6 +123,11 @@ export default function JobsClient() {
       );
     }
 
+    // ✅ NEW: Category filter
+    if (filters.category) {
+      filtered = filtered.filter((job) => job.category === filters.category);
+    }
+
     if (filters.experienceLevel) {
       filtered = filtered.filter(
         (job) => job.experienceLevel === filters.experienceLevel
@@ -114,6 +142,7 @@ export default function JobsClient() {
     setFilters({
       type: "",
       location: "",
+      category: "", // ✅ Reset category
       experienceLevel: "",
     });
     setSearchTerm("");
@@ -130,7 +159,6 @@ export default function JobsClient() {
     return colors[type] || "bg-gray-100 text-gray-700 border-gray-300";
   };
 
-  // ✅ Pagination with safety checks
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
   const currentJobs = Array.isArray(filteredJobs) 
@@ -195,9 +223,9 @@ export default function JobsClient() {
             >
               <Filter size={20} />
               <span>Filters</span>
-              {(filters.type || filters.location || filters.experienceLevel) && (
+              {(filters.type || filters.location || filters.category || filters.experienceLevel) && (
                 <span className="ml-2 bg-white text-amber-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                  {[filters.type, filters.location, filters.experienceLevel].filter(
+                  {[filters.type, filters.location, filters.category, filters.experienceLevel].filter(
                     Boolean
                   ).length}
                 </span>
@@ -214,7 +242,7 @@ export default function JobsClient() {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Job Type
@@ -232,6 +260,27 @@ export default function JobsClient() {
                     <option value="contract">Contract</option>
                     <option value="freelance">Freelance</option>
                     <option value="internship">Internship</option>
+                  </select>
+                </div>
+
+                {/* ✅ NEW: Category Filter */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <select
+                    value={filters.category}
+                    onChange={(e) =>
+                      setFilters({ ...filters, category: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -293,7 +342,7 @@ export default function JobsClient() {
         <p className="text-gray-600">
           Showing <span className="font-semibold">{filteredJobs.length}</span>{" "}
           jobs
-          {(searchTerm || filters.type || filters.location || filters.experienceLevel) &&
+          {(searchTerm || filters.type || filters.location || filters.category || filters.experienceLevel) &&
             " matching your criteria"}
         </p>
       </section>
@@ -362,6 +411,11 @@ export default function JobsClient() {
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <MapPin size={16} className="text-amber-500" />
                     <span className="line-clamp-1">{job.location}</span>
+                  </div>
+                  {/* ✅ Display category */}
+                  <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <Tag size={16} className="text-purple-500" />
+                    <span className="line-clamp-1">{job.category}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <DollarSign size={16} className="text-green-500" />

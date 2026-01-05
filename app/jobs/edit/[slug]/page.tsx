@@ -13,6 +13,7 @@ import {
   Save,
   X,
   Plus,
+  Tag,
 } from "lucide-react";
 import { useAuth, api } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,7 @@ interface JobFormData {
   type: string;
   status: string;
   experienceLevel: string;
+  category: string; // ✅ NEW: Category field
   requirements: string[];
   responsibilities: string[];
 }
@@ -34,16 +36,16 @@ interface JobFormData {
 export default function EditJobPage({
   params,
 }: {
-  params: Promise<{ slug: string }>; // ✅ Changed from id to slug
+  params: Promise<{ slug: string }>;
 }) {
-  const { slug } = use(params); // ✅ Changed from id to slug
+  const { slug } = use(params);
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [jobId, setJobId] = useState(""); // ✅ Store the actual job ID for updates
+  const [jobId, setJobId] = useState("");
 
   const [formData, setFormData] = useState<JobFormData>({
     title: "",
@@ -54,12 +56,37 @@ export default function EditJobPage({
     type: "full_time",
     status: "active",
     experienceLevel: "",
+    category: "Technology", // ✅ NEW: Default category
     requirements: [],
     responsibilities: [],
   });
 
   const [newRequirement, setNewRequirement] = useState("");
   const [newResponsibility, setNewResponsibility] = useState("");
+
+  // ✅ NEW: Categories array
+  const categories = [
+    'Technology',
+    'Healthcare',
+    'Finance',
+    'Education',
+    'Marketing',
+    'Sales',
+    'Design',
+    'Engineering',
+    'Customer Service',
+    'Human Resources',
+    'Operations',
+    'Legal',
+    'Construction',
+    'Hospitality',
+    'Retail',
+    'Transportation',
+    'Manufacturing',
+    'Agriculture',
+    'Real Estate',
+    'Other'
+  ];
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -69,15 +96,13 @@ export default function EditJobPage({
     if (isAuthenticated) {
       fetchJob();
     }
-  }, [isAuthenticated, authLoading, slug]); // ✅ Changed dependency from id to slug
+  }, [isAuthenticated, authLoading, slug]);
 
   const fetchJob = async () => {
     try {
-      // ✅ Fetch job by slug
       const res = await api.get(`${process.env.NEXT_PUBLIC_API_URL}/jobs/slug/${slug}`);
       const job = res.data;
 
-      // ✅ Store the job ID for updates
       setJobId(job._id);
 
       setFormData({
@@ -89,6 +114,7 @@ export default function EditJobPage({
         type: job.type || "full_time",
         status: job.status || "active",
         experienceLevel: job.experienceLevel || "",
+        category: job.category || "Technology", // ✅ NEW: Load category
         requirements: job.requirements || [],
         responsibilities: job.responsibilities || [],
       });
@@ -149,7 +175,6 @@ export default function EditJobPage({
     setError("");
 
     try {
-      // ✅ Update using the job ID (not slug)
       await api.patch(`${process.env.NEXT_PUBLIC_API_URL}/jobs/${jobId}`, formData);
       setSuccess(true);
       setTimeout(() => {
@@ -182,7 +207,7 @@ export default function EditJobPage({
           className="mb-6 sm:mb-8"
         >
           <Link
-            href="/my-jobs"
+            href="../my-jobs"
             className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 font-semibold mb-4 text-sm sm:text-base"
           >
             <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
@@ -298,6 +323,32 @@ export default function EditJobPage({
               </div>
             </div>
 
+            {/* ✅ NEW: Category Field */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Job Category *
+              </label>
+              <div className="relative">
+                <Tag
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  required
+                  className="w-full pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm sm:text-base appearance-none bg-white"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Job Type, Experience & Salary - 3 columns on desktop */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div>
@@ -321,21 +372,25 @@ export default function EditJobPage({
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Experience Level
+                  Experience Level *
                 </label>
-                <input
-                  type="text"
+                <select
                   name="experienceLevel"
                   value={formData.experienceLevel}
                   onChange={handleChange}
-                  placeholder="e.g., Mid-level"
                   className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm sm:text-base"
-                />
+                >
+                  <option value="Entry-level">Entry Level</option>
+                  <option value="Mid-level">Mid Level</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Lead">Lead</option>
+                  <option value="Executive">Executive</option>
+                </select>
               </div>
 
               <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Salary Range
+                  Salary Range *
                 </label>
                 <div className="relative">
                   <DollarSign
@@ -508,7 +563,7 @@ export default function EditJobPage({
                 </>
               )}
             </button>
-            <Link href="../jobs/my-jobs" className="flex-1 sm:flex-initial">
+            <Link href="../my-jobs" className="flex-1 sm:flex-initial">
               <button
                 type="button"
                 className="w-full px-6 sm:px-8 py-3 sm:py-3.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-lg transition text-sm sm:text-base"

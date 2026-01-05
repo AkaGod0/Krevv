@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Eye,
   Star,
+  Flag,
 } from "lucide-react";
 import { useAdmin, adminApi } from "./context/AdminContext";
 import Link from "next/link";
@@ -30,6 +31,7 @@ interface Stats {
   totalComments: number;
   totalViews: number;
   totalReviews: number;
+  totalReports: number; // ✅ NEW: Total reports
   recentUsers: any[];
   recentJobs: any[];
 }
@@ -46,6 +48,7 @@ export default function AdminDashboard() {
     totalComments: 0,
     totalViews: 0,
     totalReviews: 0,
+    totalReports: 0, // ✅ NEW
     recentUsers: [],
     recentJobs: [],
   });
@@ -57,12 +60,14 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const [usersRes, jobsRes, blockedRes, postsRes, reviewsRes] = await Promise.all([
+      // ✅ NEW: Fetch reports
+      const [usersRes, jobsRes, blockedRes, postsRes, reviewsRes, reportsRes] = await Promise.all([
         adminApi.get("/admin/users"),
         adminApi.get("/admin/jobs"),
         adminApi.get("/admin/users/blocked"),
         adminApi.get("/posts?limit=1000"),
         adminApi.get("/reviews").catch(() => ({ data: [] })),
+        adminApi.get("/jobs/reports/all").catch(() => ({ data: [] })), // ✅ NEW
       ]);
 
       const users = usersRes.data;
@@ -87,6 +92,14 @@ export default function AdminDashboard() {
         reviews = reviewsRes.data.reviews;
       }
 
+      // ✅ NEW: Handle reports
+      let reports = [];
+      if (Array.isArray(reportsRes.data)) {
+        reports = reportsRes.data;
+      } else if (reportsRes.data?.data && Array.isArray(reportsRes.data.data)) {
+        reports = reportsRes.data.data;
+      }
+
       let totalLikes = 0;
       let totalComments = 0;
       let totalViews = 0;
@@ -107,6 +120,7 @@ export default function AdminDashboard() {
         totalComments,
         totalViews,
         totalReviews: reviews.length,
+        totalReports: reports.length, // ✅ NEW
         recentUsers: users.slice(0, 5),
         recentJobs: jobs.slice(0, 5),
       });
@@ -122,6 +136,7 @@ export default function AdminDashboard() {
         totalComments: 0,
         totalViews: 0,
         totalReviews: 0,
+        totalReports: 0, // ✅ NEW
         recentUsers: [],
         recentJobs: [],
       });
@@ -205,6 +220,14 @@ export default function AdminDashboard() {
       textColor: "text-yellow-600",
       bgColor: "bg-yellow-100",
     },
+    // ✅ NEW: Total Reports card
+    {
+      title: "Total Reports",
+      value: stats.totalReports,
+      icon: Flag,
+      textColor: "text-red-600",
+      bgColor: "bg-red-100",
+    },
   ];
 
   return (
@@ -262,12 +285,12 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Content Stats Grid */}
+      {/* Content Stats Grid - Now with 6 items */}
       <div>
         <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 mb-2 sm:mb-3 md:mb-4 px-1">
           Content Statistics
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
           {contentStatCards.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -409,7 +432,7 @@ export default function AdminDashboard() {
           <Activity className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
           <Link href="/admin/users" className="w-full">
             <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 sm:py-2.5 md:py-3 rounded-lg transition text-xs sm:text-sm md:text-base">
               <span className="hidden xs:inline">Manage </span>Users
@@ -423,6 +446,12 @@ export default function AdminDashboard() {
           <Link href="/admin/manage" className="w-full">
             <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 sm:py-2.5 md:py-3 rounded-lg transition text-xs sm:text-sm md:text-base">
               <span className="hidden xs:inline">Manage </span>Posts
+            </button>
+          </Link>
+          {/* ✅ NEW: Reports button */}
+          <Link href="/admin/reports" className="w-full">
+            <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 sm:py-2.5 md:py-3 rounded-lg transition text-xs sm:text-sm md:text-base">
+              <span className="hidden xs:inline">View </span>Reports
             </button>
           </Link>
           <Link href="/admin/profile" className="w-full">

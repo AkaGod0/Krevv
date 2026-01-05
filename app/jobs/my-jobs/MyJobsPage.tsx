@@ -17,6 +17,8 @@ import {
   X,
   AlertTriangle,
   CheckCircle,
+  Castle,
+  CastleIcon,
 } from "lucide-react";
 import { useAuth, api } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -26,6 +28,7 @@ interface Job {
   _id: string;
   title: string;
   slug: string;
+  category:string;
   description: string;
   company: string;
   location: string;
@@ -234,14 +237,15 @@ export default function MyJobsPage() {
                       </Link>
                       <div className="flex items-center gap-1.5 text-gray-600 mt-1">
                         <Building2 size={14} className="flex-shrink-0" />
-                        <span className="font-medium text-sm truncate">{job.company}</span>
+                        <span className="font-medium text-sm truncate">{job.company} </span>
                       </div>
                     </div>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${getJobTypeColor(
-                        job.type
+                        job.type 
                       )}`}
                     >
+                    
                       {job.type.replace("_", " ").toUpperCase()}
                     </span>
                   </div>
@@ -264,6 +268,10 @@ export default function MyJobsPage() {
                     <div className="flex items-center gap-1">
                       <Briefcase size={14} className="flex-shrink-0" />
                       <span className="truncate">{job.experienceLevel}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CastleIcon size={14} className="flex-shrink-0" />
+                      <span className="truncate">{job.category}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock size={14} className="flex-shrink-0" />
@@ -355,6 +363,10 @@ export default function MyJobsPage() {
                       <div className="flex items-center gap-1.5">
                         <Briefcase size={16} />
                         <span>{job.experienceLevel}</span>
+                      </div>
+                       <div className="flex items-center gap-1.5">
+                        <CastleIcon size={16} />
+                        <span>{job.category}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Clock size={16} />
