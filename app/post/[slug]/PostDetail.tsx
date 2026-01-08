@@ -182,8 +182,8 @@ export default function PostDetail({ slug }: { slug: string }) {
       </div>
     );
 
-  return (
-    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-10 max-w-7xl">
+ return (
+ <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-10 max-w-7xl pt-20">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Main content */}
         <div className="flex-1 min-w-0 overflow-hidden">
@@ -192,20 +192,24 @@ export default function PostDetail({ slug }: { slug: string }) {
               {toast}
             </div>
           )}
-
-       <motion.div
+<motion.div
   initial={{ opacity: 0, y: 10 }}
   animate={{ opacity: 1, y: 0 }}
   transition={{ duration: 0.5 }}
-  className="w-full aspect-video overflow-hidden rounded-lg shadow-md mb-4 sm:mb-6"
+  className="w-full mb-4 sm:mb-6"
 >
   <img
     src={post.image}
     alt={post.title}
-    className="w-full h-full object-cover"
+    className="rounded-lg shadow-md"
+    style={{ 
+      width: '100%',
+      height: 'auto',
+      objectFit: 'scale-down',
+      objectPosition: 'center'
+    }}
   />
 </motion.div>
-
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
