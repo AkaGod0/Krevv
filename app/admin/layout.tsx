@@ -99,11 +99,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 Profile
               </Link>
               <Link 
-                href="/admin/maintenance" 
+                href="/admin/jobagree" 
                 className={`hover:text-yellow-400 transition flex items-center gap-2 ${pathname === '/admin/maintenance' ? 'text-yellow-400' : ''}`}
               >
                 <Settings size={18} />
-                Maintenance
+             Fetchjobs
               </Link>
               
               {/* Admin Info */}
@@ -193,8 +193,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Link href="/admin/profile" className="w-full hover:text-purple-400 flex items-center gap-2" onClick={() => setIsOpen(false)}>
                   <UserCog size={18} /> Profile
                 </Link>
-                <Link href="/admin/maintenance" className="w-full hover:text-yellow-400 flex items-center gap-2" onClick={() => setIsOpen(false)}>
-                  <Settings size={18} /> Maintenance
+                <Link href="/admin/jobagree" className="w-full hover:text-yellow-400 flex items-center gap-2" onClick={() => setIsOpen(false)}>
+                  <Settings size={18} /> Fetchjobs
                 </Link>
                 <button
                   onClick={() => { handleLogout(); setIsOpen(false); }}

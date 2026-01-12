@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Cookies from "js-cookie";
 import dynamic from 'next/dynamic';
 import type { Editor } from '@tiptap/react';
-import { FileText, Image as ImageIcon, Tag, Sparkles, CheckCircle, AlertCircle, X } from "lucide-react";
+import { FileText, Image as ImageIcon, Tag, Sparkles, CheckCircle, AlertCircle, X, Link2, AlignLeft } from "lucide-react";
 
 // Dynamic import (no SSR) + get editor instance
 const NovelEditor = dynamic(() => import('@/components/NovelEditor'), {
@@ -20,6 +20,33 @@ const NovelEditor = dynamic(() => import('@/components/NovelEditor'), {
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
+// Utility function to generate clean slugs
+const generateSlug = (text: string): string => {
+  if (!text) return "";
+  
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')      // Remove special characters
+    .replace(/\s+/g, '-')           // Replace spaces with hyphens
+    .replace(/-+/g, '-')            // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, '')        // Remove leading/trailing hyphens
+    .substring(0, 100);             // Limit length
+};
+
+// Utility function to clean/sanitize existing slugs
+const cleanSlug = (slug: string): string => {
+  if (!slug) return "";
+  
+  return decodeURIComponent(slug)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')           // Replace spaces with hyphens
+    .replace(/[^\w-]/g, '')         // Remove special characters except hyphens
+    .replace(/-+/g, '-')            // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, '');       // Remove leading/trailing hyphens
+};
+
 export default function CreatePostPage() {
   const [form, setForm] = useState({
     title: "",
@@ -28,6 +55,8 @@ export default function CreatePostPage() {
     image: null as File | null,
     keywords: "",
     contentImages: [] as File[],
+    slug: "",
+    metaDescription: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -43,7 +72,41 @@ export default function CreatePostPage() {
 
   const handleChange = (e: any) => {
     const { name, value, files } = e.target;
-    setForm({ ...form, [name]: files ? files[0] : value });
+    
+    // If changing slug, sanitize it immediately
+    if (name === "slug") {
+      setForm({ ...form, [name]: cleanSlug(value) });
+    } else {
+      setForm({ ...form, [name]: files ? files[0] : value });
+    }
+  };
+
+  // Handle title change with auto-slug generation
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const title = e.target.value;
+    const newSlug = generateSlug(title);
+    
+    setForm(prev => ({
+      ...prev,
+      title,
+      // Auto-generate slug if slug is empty or was auto-generated from previous title
+      slug: prev.slug === '' || prev.slug === generateSlug(prev.title) 
+        ? newSlug 
+        : prev.slug
+    }));
+  };
+
+  // Handle direct slug input with sanitization
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawSlug = e.target.value;
+    // Allow typing but sanitize (convert spaces to hyphens in real-time)
+    const sanitized = rawSlug
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]/g, '')
+      .replace(/-+/g, '-');
+    
+    setForm(prev => ({ ...prev, slug: sanitized }));
   };
 
   const resetForm = () => {
@@ -53,7 +116,9 @@ export default function CreatePostPage() {
       category: "",
       image: null,
       keywords: "",
-      contentImages: []
+      contentImages: [],
+      slug: "",
+      metaDescription: "",
     });
     
     // Clear editor content
@@ -70,6 +135,9 @@ export default function CreatePostPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Final slug sanitization before submit
+    const finalSlug = cleanSlug(form.slug) || generateSlug(form.title);
 
     // Step 1: Collect all images + their blob URLs from editor
     const imageMap: { file: File; blobUrl: string }[] = [];
@@ -98,6 +166,8 @@ export default function CreatePostPage() {
     formData.append("content", "TEMP_CONTENT");
     formData.append("category", form.category);
     formData.append("keywords", form.keywords);
+    formData.append("slug", finalSlug);
+    formData.append("metaDescription", form.metaDescription);
 
     if (form.image) formData.append("image", form.image);
 
@@ -129,7 +199,7 @@ export default function CreatePostPage() {
 
       // Step 4: Update post with REAL content
       const updateRes = await fetch(`${API}/posts/${data._id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -257,10 +327,63 @@ export default function CreatePostPage() {
             name="title"
             placeholder="Enter an engaging title..."
             value={form.title}
-            onChange={handleChange}
+            onChange={handleTitleChange}
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-gray-800"
           />
+        </div>
+
+        {/* Slug */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <div className="flex items-center gap-2">
+              <Link2 size={18} />
+              URL Slug
+            </div>
+          </label>
+          <div className="flex items-center">
+            <span className="px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-500 text-sm">
+              /post/
+            </span>
+            <input
+              type="text"
+              name="slug"
+              placeholder="your-post-url-slug"
+              value={form.slug}
+              onChange={handleSlugChange}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-gray-800"
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Auto-generated from title. Only lowercase letters, numbers, and hyphens allowed.
+          </p>
+        </div>
+
+        {/* Meta Description */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <div className="flex items-center gap-2">
+              <AlignLeft size={18} />
+              Meta Description
+            </div>
+          </label>
+          <textarea
+            name="metaDescription"
+            placeholder="Write a compelling description for search engines (150-160 characters recommended)..."
+            value={form.metaDescription}
+            onChange={handleChange}
+            rows={3}
+            maxLength={200}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-gray-800 resize-none"
+          />
+          <div className="flex justify-between mt-1">
+            <p className="text-xs text-gray-500">
+              Used for SEO and social media previews
+            </p>
+            <p className={`text-xs ${form.metaDescription.length > 160 ? 'text-orange-500' : 'text-gray-500'}`}>
+              {form.metaDescription.length}/160
+            </p>
+          </div>
         </div>
 
         {/* Category */}

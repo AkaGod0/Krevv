@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Tag,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -32,7 +34,15 @@ interface Job {
   status: string;
   experienceLevel: string;
   createdAt: string;
-  postedBy: {
+  companyLogo?: string;
+  
+  // External job fields
+  isExternal?: boolean;
+  externalSource?: string;
+  externalApplyUrl?: string;
+  tags?: string[];
+  
+  postedBy?: {
     firstName: string;
     lastName: string;
   };
@@ -46,14 +56,14 @@ export default function JobsClient() {
   const [filters, setFilters] = useState({
     type: "",
     location: "",
-    category: "", // ✅ NEW: Category filter
+    category: "",
     experienceLevel: "",
+    source: "",
   });
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const jobsPerPage = 12;
 
-  // ✅ NEW: Categories array
   const categories = [
     'Technology',
     'Healthcare',
@@ -88,7 +98,7 @@ export default function JobsClient() {
   const fetchJobs = async () => {
     try {
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active`
+        `${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=500`
       );
       
       const jobsData = res.data?.data || res.data || [];
@@ -123,7 +133,6 @@ export default function JobsClient() {
       );
     }
 
-    // ✅ NEW: Category filter
     if (filters.category) {
       filtered = filtered.filter((job) => job.category === filters.category);
     }
@@ -134,6 +143,12 @@ export default function JobsClient() {
       );
     }
 
+    if (filters.source === 'external') {
+      filtered = filtered.filter((job) => job.isExternal === true);
+    } else if (filters.source === 'user') {
+      filtered = filtered.filter((job) => !job.isExternal);
+    }
+
     setFilteredJobs(filtered);
     setCurrentPage(1);
   };
@@ -142,8 +157,9 @@ export default function JobsClient() {
     setFilters({
       type: "",
       location: "",
-      category: "", // ✅ Reset category
+      category: "",
       experienceLevel: "",
+      source: "",
     });
     setSearchTerm("");
   };
@@ -159,6 +175,16 @@ export default function JobsClient() {
     return colors[type] || "bg-gray-100 text-gray-700 border-gray-300";
   };
 
+  const getSourceColor = (source: string) => {
+    const colors: Record<string, string> = {
+      'Remotive': 'bg-blue-100 text-blue-700',
+      'RemoteOK': 'bg-green-100 text-green-700',
+      'Arbeitnow': 'bg-purple-100 text-purple-700',
+      'Himalayas': 'bg-orange-100 text-orange-700',
+    };
+    return colors[source] || 'bg-gray-100 text-gray-700';
+  };
+
   const indexOfLastJob = currentPage * jobsPerPage;
   const indexOfFirstJob = indexOfLastJob - jobsPerPage;
   const currentJobs = Array.isArray(filteredJobs) 
@@ -167,6 +193,9 @@ export default function JobsClient() {
   const totalPages = Math.ceil((filteredJobs?.length || 0) / jobsPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  const externalCount = jobs.filter(j => j.isExternal).length;
+  const userCount = jobs.filter(j => !j.isExternal).length;
 
   if (loading) {
     return (
@@ -190,6 +219,14 @@ export default function JobsClient() {
             <p className="text-xl text-amber-100">
               Explore {jobs.length}+ opportunities from top companies worldwide
             </p>
+            <div className="flex gap-4 mt-4 text-sm">
+              <span className="px-3 py-1 bg-white/20 rounded-full">
+                🏢 {userCount} direct postings
+              </span>
+              <span className="px-3 py-1 bg-white/20 rounded-full">
+                🌐 {externalCount} aggregated jobs
+              </span>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -223,9 +260,9 @@ export default function JobsClient() {
             >
               <Filter size={20} />
               <span>Filters</span>
-              {(filters.type || filters.location || filters.category || filters.experienceLevel) && (
+              {(filters.type || filters.location || filters.category || filters.experienceLevel || filters.source) && (
                 <span className="ml-2 bg-white text-amber-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                  {[filters.type, filters.location, filters.category, filters.experienceLevel].filter(
+                  {[filters.type, filters.location, filters.category, filters.experienceLevel, filters.source].filter(
                     Boolean
                   ).length}
                 </span>
@@ -242,7 +279,7 @@ export default function JobsClient() {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-6 pt-6 border-t border-gray-200">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Job Type
@@ -263,7 +300,6 @@ export default function JobsClient() {
                   </select>
                 </div>
 
-                {/* ✅ NEW: Category Filter */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Category
@@ -321,6 +357,23 @@ export default function JobsClient() {
                     <option value="Executive">Executive</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Source
+                  </label>
+                  <select
+                    value={filters.source}
+                    onChange={(e) =>
+                      setFilters({ ...filters, source: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                  >
+                    <option value="">All Sources</option>
+                    <option value="user">Direct Postings</option>
+                    <option value="external">Aggregated Jobs</option>
+                  </select>
+                </div>
               </div>
 
               <div className="mt-4 flex justify-end">
@@ -342,7 +395,7 @@ export default function JobsClient() {
         <p className="text-gray-600">
           Showing <span className="font-semibold">{filteredJobs.length}</span>{" "}
           jobs
-          {(searchTerm || filters.type || filters.location || filters.category || filters.experienceLevel) &&
+          {(searchTerm || filters.type || filters.location || filters.category || filters.experienceLevel || filters.source) &&
             " matching your criteria"}
         </p>
       </section>
@@ -377,71 +430,111 @@ export default function JobsClient() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: idx * 0.05 }}
-                className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-all p-6 border border-gray-100 hover:border-amber-300 hover:-translate-y-1 cursor-pointer"
+                className="bg-white rounded-xl shadow-md hover:shadow-2xl transition-all p-6 border border-gray-100 hover:border-amber-300 hover:-translate-y-1"
               >
+                {/* Header with badges */}
                 <div className="flex items-center justify-between mb-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${getJobTypeColor(
-                      job.type
-                    )}`}
-                  >
-                    {job.type.replace("_", " ").toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${getJobTypeColor(
+                        job.type
+                      )}`}
+                    >
+                      {job.type?.replace("_", " ").toUpperCase()}
+                    </span>
+                    {/* External source badge */}
+                    {job.isExternal && job.externalSource && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getSourceColor(job.externalSource)}`}>
+                        <Globe size={10} />
+                        {job.externalSource}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs text-gray-400">
                     {new Date(job.createdAt).toLocaleDateString()}
                   </span>
                 </div>
 
-                <Link href={`/jobs/${job.slug}`}>
-                  <h3 className="text-xl font-bold text-[#3e2a1a] mb-2 hover:text-amber-700 transition line-clamp-2">
-                    {job.title}
-                  </h3>
-                </Link>
-
-                <div className="flex items-center gap-2 text-gray-600 mb-3">
-                  <Building2 size={16} />
-                  <span className="text-sm font-medium">{job.company}</span>
+                {/* Company logo + title */}
+                <div className="flex items-start gap-3 mb-3">
+                  {job.companyLogo ? (
+                    <img
+                      src={job.companyLogo}
+                      alt={job.company}
+                      className="w-12 h-12 rounded-lg object-cover bg-gray-100"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                      <Building2 className="text-white" size={20} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/jobs/${job.slug}`}>
+                      <h3 className="text-lg font-bold text-[#3e2a1a] hover:text-amber-700 transition line-clamp-2">
+                        {job.title}
+                      </h3>
+                    </Link>
+                    <p className="text-sm text-gray-600 font-medium">{job.company}</p>
+                  </div>
                 </div>
 
-                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                   {job.description}
                 </p>
 
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <MapPin size={16} className="text-amber-500" />
+                    <MapPin size={16} className="text-amber-500 flex-shrink-0" />
                     <span className="line-clamp-1">{job.location}</span>
                   </div>
-                  {/* ✅ Display category */}
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <Tag size={16} className="text-purple-500" />
+                    <Tag size={16} className="text-purple-500 flex-shrink-0" />
                     <span className="line-clamp-1">{job.category}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <DollarSign size={16} className="text-green-500" />
-                    <span>{job.salary}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <Briefcase size={16} className="text-blue-500" />
-                    <span>{job.experienceLevel}</span>
-                  </div>
+                  {job.salary && (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <DollarSign size={16} className="text-green-500 flex-shrink-0" />
+                      <span className="line-clamp-1">{job.salary}</span>
+                    </div>
+                  )}
                 </div>
 
-                <Link href={`/jobs/${job.slug}`}>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-lg shadow transition-all"
+                {/* Action button */}
+                {job.isExternal ? (
+                  <a
+                    href={job.externalApplyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-lg shadow transition-all flex items-center justify-center gap-2"
                   >
-                    View Details
-                  </motion.button>
-                </Link>
+                    Apply at {job.company}
+                    <ExternalLink size={16} />
+                  </a>
+                ) : (
+                  <Link href={`/jobs/${job.slug}`}>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-lg shadow transition-all"
+                    >
+                      View Details
+                    </motion.button>
+                  </Link>
+                )}
 
+                {/* Footer - Shows company name for external jobs */}
                 <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-400">
                   <Clock size={14} />
-                  <span>
-                    Posted by {job.postedBy?.firstName} {job.postedBy?.lastName}
-                  </span>
+                  {job.isExternal ? (
+                    <span>Via {job.company}</span>
+                  ) : (
+                    <span>
+                      Posted by {job.postedBy?.firstName} {job.postedBy?.lastName}
+                    </span>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -468,19 +561,31 @@ export default function JobsClient() {
               <ChevronLeft size={20} />
             </button>
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => paginate(page)}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
-                  currentPage === page
-                    ? "bg-amber-500 text-white shadow-lg"
-                    : "bg-white text-gray-700 hover:bg-amber-50 shadow"
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => paginate(pageNum)}
+                  className={`px-4 py-2 rounded-lg font-semibold transition ${
+                    currentPage === pageNum
+                      ? "bg-amber-500 text-white shadow-lg"
+                      : "bg-white text-gray-700 hover:bg-amber-50 shadow"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
 
             <button
               onClick={() => paginate(currentPage + 1)}

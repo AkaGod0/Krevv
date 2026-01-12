@@ -19,9 +19,9 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  User,
-  Calendar,
-  Shield,
+  X,
+  Link2,
+  AlignLeft,
 } from "lucide-react";
 
 const NovelEditor = dynamic(() => import("@/components/NovelEditor"), {
@@ -36,6 +36,19 @@ const NovelEditor = dynamic(() => import("@/components/NovelEditor"), {
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
+// Utility function to clean/sanitize slugs
+const cleanSlug = (slug: string): string => {
+  if (!slug) return "";
+  
+  return decodeURIComponent(slug)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')           // Replace spaces with hyphens
+    .replace(/[^\w-]/g, '')         // Remove special characters except hyphens
+    .replace(/-+/g, '-')            // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, '');       // Remove leading/trailing hyphens
+};
+
 export default function EditPostPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -47,11 +60,12 @@ export default function EditPostPage() {
     image: "",
     category: "",
     slug: "",
+    metaDescription: "",
     contentImages: [] as string[],
   });
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fetching, setFetching] = useState(true);
   const [comments, setComments] = useState<any[]>([]);
 
@@ -60,7 +74,10 @@ export default function EditPostPage() {
     open: false,
     commentId: null,
   });
-  const [successModal, setSuccessModal] = useState(false);
+  const [successToast, setSuccessToast] = useState<{ show: boolean; message: string }>({
+    show: false,
+    message: "",
+  });
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -75,7 +92,8 @@ export default function EditPostPage() {
           content: data.content || "",
           image: data.image || "",
           category: data.category || "",
-          slug: data.slug || "",
+          slug: cleanSlug(data.slug || ""), // Clean slug on load
+          metaDescription: data.metaDescription || "",
           contentImages: data.contentImages || [],
         });
 
@@ -84,7 +102,7 @@ export default function EditPostPage() {
         setComments(commentsData || []);
       } catch (err) {
         console.error(err);
-        setMessage({ type: "error", text: "Failed to load post" });
+        setErrorMessage("Failed to load post");
       } finally {
         setFetching(false);
       }
@@ -92,16 +110,45 @@ export default function EditPostPage() {
     if (id) fetchPost();
   }, [id]);
 
+  const showSuccessToast = (message: string) => {
+    setSuccessToast({ show: true, message });
+    setTimeout(() => {
+      setSuccessToast({ show: false, message: "" });
+    }, 3000);
+  };
+
+  const showErrorMessage = (message: string) => {
+    setErrorMessage(message);
+    setTimeout(() => setErrorMessage(null), 4000);
+  };
+
+  // Handle slug input with real-time sanitization
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawSlug = e.target.value;
+    // Allow typing but sanitize (convert spaces to hyphens in real-time)
+    const sanitized = rawSlug
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w-]/g, '')
+      .replace(/-+/g, '-');
+    
+    setForm(prev => ({ ...prev, slug: sanitized }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
+    setErrorMessage(null);
+
+    // Final slug sanitization before submit
+    const finalSlug = cleanSlug(form.slug);
 
     const formData = new FormData();
     formData.append("title", form.title);
     formData.append("content", editorRef.current?.getHTML() || "");
     formData.append("category", form.category);
-    formData.append("slug", form.slug);
+    formData.append("slug", finalSlug);
+    formData.append("metaDescription", form.metaDescription);
     if (file) formData.append("image", file);
 
     try {
@@ -117,14 +164,13 @@ export default function EditPostPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to update");
 
-      setMessage({ type: "success", text: "Post updated successfully!" });
+      showSuccessToast("Post updated successfully!");
       setTimeout(() => {
         router.push("/admin/manage");
       }, 2000);
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to update post" });
-      setTimeout(() => setMessage(null), 4000);
-      console.log(err)
+      showErrorMessage(err.message || "Failed to update post");
+      console.log(err);
     } finally {
       setLoading(false);
     }
@@ -135,7 +181,7 @@ export default function EditPostPage() {
 
     const token = Cookies.get("admin_token") || Cookies.get("token");
     if (!token) {
-      setMessage({ type: "error", text: "Please login again" });
+      showErrorMessage("Please login again");
       return;
     }
 
@@ -154,8 +200,7 @@ export default function EditPostPage() {
           }));
       };
       setComments(removeComment);
-      setMessage({ type: "success", text: "Comment deleted successfully" });
-      setTimeout(() => setMessage(null), 3000);
+      showSuccessToast("Comment deleted successfully");
     }
 
     setDeleteModal({ open: false, commentId: null });
@@ -196,7 +241,7 @@ export default function EditPostPage() {
 
         const token = Cookies.get("admin_token") || Cookies.get("token");
         if (!token) {
-          setMessage({ type: "error", text: "Please login again" });
+          showErrorMessage("Please login again");
           return;
         }
 
@@ -351,6 +396,56 @@ export default function EditPostPage() {
 
   return (
     <div className="space-y-6">
+      {/* Success Toast - Top Right */}
+      <AnimatePresence>
+        {successToast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: 100 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -50, x: 100 }}
+            transition={{ duration: 0.3 }}
+            className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 z-50 max-w-md"
+          >
+            <CheckCircle size={24} className="flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold">Success!</p>
+              <p className="text-sm text-green-50">{successToast.message}</p>
+            </div>
+            <button
+              onClick={() => setSuccessToast({ show: false, message: "" })}
+              className="text-white hover:text-green-100 transition"
+            >
+              <X size={20} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Error Toast - Top Right */}
+      <AnimatePresence>
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: 100 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: -50, x: 100 }}
+            transition={{ duration: 0.3 }}
+            className="fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 z-50 max-w-md"
+          >
+            <AlertCircle size={24} className="flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold">Error</p>
+              <p className="text-sm text-red-50">{errorMessage}</p>
+            </div>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="text-white hover:text-red-100 transition"
+            >
+              <X size={20} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -363,35 +458,6 @@ export default function EditPostPage() {
         </div>
         <p className="text-indigo-100">Update your blog post content and settings</p>
       </motion.div>
-
-      {/* Success/Error Message */}
-      <AnimatePresence>
-        {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className={`p-4 rounded-lg flex items-center gap-3 ${
-              message.type === "success"
-                ? "bg-green-50 border border-green-200"
-                : "bg-red-50 border border-red-200"
-            }`}
-          >
-            {message.type === "success" ? (
-              <CheckCircle className="text-green-600" size={20} />
-            ) : (
-              <AlertCircle className="text-red-600" size={20} />
-            )}
-            <p
-              className={
-                message.type === "success" ? "text-green-700 font-medium" : "text-red-700 font-medium"
-              }
-            >
-              {message.text}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Main Form */}
@@ -414,6 +480,57 @@ export default function EditPostPage() {
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-800"
                 />
+              </div>
+
+              {/* Slug */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Link2 size={18} />
+                    URL Slug
+                  </div>
+                </label>
+                <div className="flex items-center">
+                  <span className="px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-500 text-sm">
+                    /post/
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="your-post-url-slug"
+                    value={form.slug}
+                    onChange={handleSlugChange}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-800"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Only lowercase letters, numbers, and hyphens allowed. Spaces will be converted to hyphens.
+                </p>
+              </div>
+
+              {/* Meta Description */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <AlignLeft size={18} />
+                    Meta Description
+                  </div>
+                </label>
+                <textarea
+                  placeholder="Write a compelling description for search engines (150-160 characters recommended)..."
+                  value={form.metaDescription}
+                  onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
+                  rows={3}
+                  maxLength={200}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-800 resize-none"
+                />
+                <div className="flex justify-between mt-1">
+                  <p className="text-xs text-gray-500">
+                    Used for SEO and social media previews
+                  </p>
+                  <p className={`text-xs ${form.metaDescription.length > 160 ? 'text-orange-500' : 'text-gray-500'}`}>
+                    {form.metaDescription.length}/160
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -523,8 +640,7 @@ export default function EditPostPage() {
                       key={comment._id}
                       comment={comment}
                       onReplySuccess={() => {
-                        setSuccessModal(true);
-                        setTimeout(() => setSuccessModal(false), 2000);
+                        showSuccessToast("Reply sent successfully!");
                       }}
                     />
                   ))}
@@ -570,33 +686,6 @@ export default function EditPostPage() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* Success Modal */}
-      <AnimatePresence>
-        {successModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSuccessModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.8, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: -20 }}
-              className="bg-white rounded-xl shadow-2xl p-8 text-center max-w-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="text-green-600" size={32} />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">Reply Sent!</h3>
-              <p className="text-gray-600">Your admin reply has been posted successfully.</p>
-            </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>
