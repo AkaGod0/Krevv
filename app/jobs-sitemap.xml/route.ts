@@ -1,25 +1,30 @@
 let jobs: any[] = [];
 
 try {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=10000`,
-    { cache: "no-store" }
-  );
+const res = await fetch(
+`${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=0`, {
+cache: "no-store"
+});
 
+```
   const data = await res.json();
-  jobs = Array.isArray(data?.data) ? data.data : [];
+jobs = Array.isArray(data.data) ? data.data : [];
+
+```
+
 } catch (err) {
-  console.error("❌ Failed to fetch jobs for sitemap:", err);
+console.error("❌ Failed to fetch jobs for sitemap:", err);
 }
 
 // --------------------
-// Dynamic job routes
+// Dynamic jobs
 // --------------------
 const jobRoutes: MetadataRoute.Sitemap = jobs.map((job) => ({
-  url: `${baseUrl}/jobs/${job.slug}`,
-  lastModified: new Date(job.updatedAt || job.createdAt),
-  changeFrequency: "weekly", // ✅ better for job listings
-  priority: 0.8,
+url: `${baseUrl}/jobs/${job.slug}`,
+lastModified: new Date(job.updatedAt || job.createdAt),
+changeFrequency: "daily",
+priority: 0.8,
 }));
 
 return [...staticRoutes, ...postRoutes, ...jobRoutes];
+}
