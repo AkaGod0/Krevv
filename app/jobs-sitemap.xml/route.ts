@@ -1,8 +1,6 @@
-import { MetadataRoute } from "next";
-
 export async function GET() {
   const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://www.krevv.com";
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.krevv.com";
 
   let jobs: any[] = [];
 
@@ -12,49 +10,48 @@ export async function GET() {
       { cache: "no-store" }
     );
 
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
+    }
+
     const data = await res.json();
     jobs = Array.isArray(data?.data) ? data.data : [];
   } catch (err) {
     console.error("❌ Failed to fetch jobs for sitemap:", err);
   }
 
-  const urls = jobs.map((job) => ({
-    url: `${baseUrl}/jobs/${job.slug}`,
-    lastModified: new Date(job.updatedAt || job.createdAt),
-    changeFrequency: "weekly",
-    priority: 0.8,
-  }));
+  const urlsXml = jobs
+    .map((job) => {
+      if (!job?.slug) return "";
 
-  const sitemap: MetadataRoute.Sitemap = [
-    {
-      url: `${baseUrl}/jobs`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    ...urls,
-  ];
+      const lastMod = job.updatedAt || job.createdAt || new Date();
 
-  return new Response(
-    `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemap
-  .map(
-    (item) => `
+      return `
   <url>
-    <loc>${item.url}</loc>
-    <lastmod>${item.lastModified?.toISOString()}</lastmod>
-    <changefreq>${item.changeFrequency}</changefreq>
-    <priority>${item.priority}</priority>
+    <loc>${baseUrl}/jobs/${job.slug}</loc>
+    <lastmod>${new Date(lastMod).toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+    })
+    .join("");
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/jobs</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
   </url>
-`
-  )
-  .join("")}
-</urlset>`,
-    {
-      headers: {
-        "Content-Type": "application/xml",
-      },
-    }
-  );
+${urlsXml}
+</urlset>`;
+
+  return new Response(xml, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
 }
