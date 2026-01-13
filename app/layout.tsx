@@ -84,7 +84,6 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <head>
       <GoogleTagManager.Head />
       <body className="bg-cream text-gray-800 flex flex-col min-h-screen">
         {/* ✅ Wrap with both AuthProvider and AdminProvider */}
