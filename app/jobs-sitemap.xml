@@ -2,7 +2,7 @@ let jobs: any[] = [];
 
 try {
 const res = await fetch(
-`${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=0`, {
+`${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=10000`, {
 cache: "no-store"
 });
 
