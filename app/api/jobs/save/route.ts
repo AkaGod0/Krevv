@@ -1,34 +1,30 @@
 import { autoSubmitIndexNow } from "@/lib/autoIndexNow";
+import { prisma } from "@/lib/prisma"; // 👈 REQUIRED
+
+export const runtime = "nodejs"; // 👈 FIXES DEPLOYMENT
 
 export async function POST(req: Request) {
-  const data = await req.json();
+  const body = await req.json();
 
-  // Create or update job
-  const oldJob = data.id
-    ? await db.job.findUnique({ where: { id: data.id } })
+  const oldJob = body.id
+    ? await prisma.job.findUnique({ where: { id: body.id } })
     : null;
 
-  const job = data.id
-    ? await db.job.update({ where: { id: data.id }, data })
-    : await db.job.create({ data });
+  const job = body.id
+    ? await prisma.job.update({
+        where: { id: body.id },
+        data: body,
+      })
+    : await prisma.job.create({
+        data: body,
+      });
 
-  // ✅ Auto IndexNow
   await autoSubmitIndexNow({
-    id: job.id,
     slug: job.slug,
     status: job.status,
     oldStatus: oldJob?.status,
     type: "job",
-    indexNowSubmitted: job.indexNowSubmitted,
   });
-
-  // Optional: mark as submitted
-  if (job.status === "active" && !job.indexNowSubmitted) {
-    await db.job.update({
-      where: { id: job.id },
-      data: { indexNowSubmitted: true },
-    });
-  }
 
   return Response.json({ success: true });
 }
