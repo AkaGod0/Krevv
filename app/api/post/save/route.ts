@@ -1,31 +1,30 @@
 import { autoSubmitIndexNow } from "@/lib/autoIndexNow";
+import { prisma } from "@/lib/prisma";
+
+export const runtime = "nodejs"; // 👈 REQUIRED
 
 export async function POST(req: Request) {
-  const data = await req.json();
+  const body = await req.json();
 
-  const oldPost = data.id
-    ? await db.post.findUnique({ where: { id: data.id } })
+  const oldPost = body.id
+    ? await prisma.blog.findUnique({ where: { id: body.id } })
     : null;
 
-  const post = data.id
-    ? await db.post.update({ where: { id: data.id }, data })
-    : await db.post.create({ data });
+  const post = body.id
+    ? await prisma.blog.update({
+        where: { id: body.id },
+        data: body,
+      })
+    : await prisma.blog.create({
+        data: body,
+      });
 
   await autoSubmitIndexNow({
-    id: post.id,
     slug: post.slug,
     status: post.status,
     oldStatus: oldPost?.status,
     type: "blog",
-    indexNowSubmitted: post.indexNowSubmitted,
   });
-
-  if (post.status === "published" && !post.indexNowSubmitted) {
-    await db.post.update({
-      where: { id: post.id },
-      data: { indexNowSubmitted: true },
-    });
-  }
 
   return Response.json({ success: true });
 }
