@@ -1,15 +1,19 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import axios from "axios";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import axios, { AxiosInstance } from "axios";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
 interface User {
+  name?: string;
   _id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  companyLogo?: string;
+  logo?: string;
   role?: string;
   phone?: string;
   location?: string;
@@ -20,74 +24,65 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  companyLogin: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   token: string | null;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Create axios instance with interceptor
+// Helper function to get token - ALWAYS reads fresh from cookie
+const getToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return Cookies.get('auth_token') || null;
+};
+
+// Create API instance
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
-// Add token to all requests
+// Request interceptor - ALWAYS gets fresh token from cookie
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
-      const token = Cookies.get('auth_token');
-     
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      } else {
-        console.log('❌ No token found in cookies');
-      }
+    const token = getToken();
+    
+    // CHANGE: Strictly check if token exists and is not the string "undefined"
+    if (token && token !== 'undefined' && token !== 'null') {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // If no token, don't send the Authorization header at all
+      delete config.headers.Authorization;
+      console.warn(`[API] ⚠️ No token available for ${config.url}`);
     }
+    
     return config;
   },
-  (error) => {
-    console.error('❌ Request interceptor error:', error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Add response interceptor for debugging and error handling
+// Response interceptor
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // ✅ Safely extract error message
-    const errorMessage = String(
-      error.response?.data?.message || 
-      error.message || 
-      "Request failed"
-    );
+    const status = error.response?.status;
+    const message = error.response?.data?.message || error.message;
     
-    // ✅ Safe toLowerCase check
-    const errorLower = errorMessage.toLowerCase();
+    console.error(`[API] ❌ Error ${status}:`, message);
     
-    // ✅ Only log unexpected errors (not blocked/unverified users)
-    if (!errorLower.includes("blocked") && 
-        !errorLower.includes("verify")) {
-      console.error('❌ API Error:', errorMessage);
-    } else {
-      console.log('ℹ️ Expected authentication issue:', errorMessage.substring(0, 50) + "...");
+    if (status === 401) {
+      console.warn('[API] Unauthorized - token may be invalid');
+      // Don't auto-clear token here, let the component handle it
     }
     
-    // If 401, clear token and redirect to login
-    if (error.response?.status === 401) {
-      console.log('🔓 Unauthorized - clearing token');
-      if (typeof window !== 'undefined') {
-        Cookies.remove('auth_token');
-      }
-    }
     return Promise.reject(error);
   }
 );
 
-export { api };
+export { api, getToken };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -95,102 +90,183 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  // Decode JWT payload
+  const decodeToken = (token: string) => {
     try {
-      if (typeof window !== 'undefined') {
-        const storedToken = Cookies.get('auth_token');
-        
-        if (storedToken) {
-          setToken(storedToken);
-          const res = await api.get('/users/me');
-          setUser(res.data);
-        } else {
-          console.log('⚠️ No token in cookies, user not authenticated');
-        }
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(window.atob(base64));
+    } catch (e) {
+      console.error('[Auth] Failed to decode token:', e);
+      return null;
+    }
+  };
+
+  // Check authentication on mount
+  const checkAuth = useCallback(async () => {
+    console.log('[Auth] 🔍 Checking authentication...');
+    
+    try {
+      const storedToken = getToken();
+      
+      if (!storedToken) {
+        console.log('[Auth] No token found');
+        setLoading(false);
+        return;
       }
+
+      console.log('[Auth] Token found, length:', storedToken.length);
+      setToken(storedToken);
+      
+      const payload = decodeToken(storedToken);
+      if (!payload) {
+        console.error('[Auth] Invalid token format');
+        Cookies.remove('auth_token', { path: '/' });
+        setLoading(false);
+        return;
+      }
+      
+      console.log('[Auth] Token payload:', { 
+        type: payload.type, 
+        email: payload.email,
+        exp: new Date(payload.exp * 1000).toISOString()
+      });
+
+      // Check if token is expired
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        console.warn('[Auth] Token expired');
+        Cookies.remove('auth_token', { path: '/' });
+        setToken(null);
+        setLoading(false);
+        return;
+      }
+
+      const isCompany = payload.type === 'company';
+      const endpoint = isCompany ? '/company/profile' : '/users/me';
+      
+      console.log('[Auth] Fetching profile from:', endpoint);
+
+      const res = await api.get(endpoint);
+      const userData = res.data.data || res.data;
+      
+      // Normalize logo field
+      if (userData.logo && !userData.companyLogo) {
+        userData.companyLogo = userData.logo;
+      }
+      
+      console.log('[Auth] ✅ User loaded:', userData.companyName || userData.email);
+      setUser(userData);
+      
     } catch (error: any) {
-      console.error('❌ Auth check failed:', error);
-      console.error('❌ Error response:', error.response?.data);
-      if (typeof window !== 'undefined') {
-        Cookies.remove('auth_token');
+      console.error('[Auth] ❌ Auth check failed:', error.response?.data || error.message);
+      
+      if (error.response?.status === 401) {
+        Cookies.remove('auth_token', { path: '/' });
+        setUser(null);
+        setToken(null);
       }
-      setUser(null);
-      setToken(null);
     } finally {
       setLoading(false);
-      console.log('✅ Auth check complete');
     }
+  }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Handle successful authentication
+  const handleAuthSuccess = async (responseData: any) => {
+    const authToken = responseData.token || responseData.data?.token || responseData.accessToken;
+    
+    if (!authToken) {
+      console.error('[Auth] No token in response');
+      throw new Error('No token received from server');
+    }
+
+    console.log('[Auth] 🎫 Token received, saving...');
+    
+    // Save to cookie
+    Cookies.set('auth_token', authToken, {
+      expires: 7,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+    
+    // Verify it was saved
+    const savedToken = getToken();
+    if (!savedToken) {
+      console.error('[Auth] ❌ Failed to save token to cookie!');
+      throw new Error('Failed to save authentication token');
+    }
+    
+    console.log('[Auth] ✅ Token saved to cookie');
+    setToken(authToken);
+    
+    // Decode and fetch profile
+    const payload = decodeToken(authToken);
+    if (!payload) {
+      throw new Error('Invalid token format');
+    }
+    
+    console.log('[Auth] Token type:', payload.type);
+
+    const isCompany = payload.type === 'company';
+    const endpoint = isCompany ? '/company/profile' : '/users/me';
+    
+    // Fetch profile with explicit token header (in case interceptor hasn't updated yet)
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    
+    const userData = res.data.data || res.data;
+    
+    // Normalize logo field
+    if (userData.logo && !userData.companyLogo) {
+      userData.companyLogo = userData.logo;
+    }
+    
+    console.log('[Auth] ✅ Profile loaded:', userData.companyName || userData.email);
+    setUser(userData);
+    
+    return payload;
   };
 
   const login = async (email: string, password: string) => {
-    try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-        { email, password }
-      );
-      
-      const { user: userData, token: authToken } = res.data;
-      
-      if (typeof window !== 'undefined') {
-        // ✅ Store token in cookie with security options
-        Cookies.set('auth_token', authToken, {
-          expires: 7, // 7 days
-          secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-          sameSite: 'strict', // CSRF protection
-          path: '/', // Available across entire site
-        });
-        
-        // Verify it was saved
-        const savedToken = Cookies.get('auth_token');
-        console.log('✅ Token saved:', savedToken ? 'YES' : 'NO');
-      }
-      
-      setUser(userData);
-      setToken(authToken);
-      console.log('✅ Login successful');
-    } catch (error: any) {
-      // ✅ Safely extract error message
-      const errorMessage = String(
-        error.response?.data?.message || 
-        error.message || 
-        "Login failed"
-      );
-      
-      // ✅ Safe toLowerCase check
-      const errorLower = errorMessage.toLowerCase();
-      
-      // ✅ Only log unexpected errors (not blocked/unverified users)
-      if (!errorLower.includes("blocked") && 
-          !errorLower.includes("verify")) {
-        console.error("❌ Login error:", error);
-      } else {
-        console.log("ℹ️ Login prevented:", errorMessage.substring(0, 50) + "...");
-      }
-      
-      // Re-throw so login page can handle it
-      throw error;
-    }
+    console.log('[Auth] 🔐 User login:', email);
+    const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, { 
+      email, 
+      password 
+    });
+    await handleAuthSuccess(res.data);
+  };
+
+  const companyLogin = async (email: string, password: string) => {
+    console.log('[Auth] 🏢 Company login:', email);
+    const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/company/login`, { 
+      email, 
+      password 
+    });
+    await handleAuthSuccess(res.data);
   };
 
   const logout = async () => {
-    console.log('🚪 Logging out...');
-    try {
-      await api.post('/auth/logout');
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      if (typeof window !== 'undefined') {
-        Cookies.remove('auth_token', { path: '/' });
-        console.log('✅ Token removed');
-      }
-      setUser(null);
-      setToken(null);
-      router.push("/");
-    }
+    console.log('[Auth] 👋 Logging out...');
+    
+    // Clear cookie first
+    Cookies.remove('auth_token', { path: '/' });
+    
+    // Clear state
+    setUser(null);
+    setToken(null);
+    
+    // Redirect
+    router.push('/');
+  };
+
+  const refreshUser = async () => {
+    console.log('[Auth] 🔄 Refreshing user data...');
+    await checkAuth();
   };
 
   return (
@@ -200,8 +276,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         loading,
         login,
+        companyLogin,
         logout,
-        isAuthenticated: !!user && !!token,
+        isAuthenticated: !!user && !!getToken(),
+        refreshUser,
       }}
     >
       {children}

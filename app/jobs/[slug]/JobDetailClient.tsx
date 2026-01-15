@@ -42,11 +42,13 @@ interface Job {
   requirements: string[];
   responsibilities: string[];
   createdAt: string;
+  companyLogo:string;
   postedBy: {
     _id: string;
     firstName: string;
     lastName: string;
     email: string;
+    
   };
 }
 
@@ -599,19 +601,30 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
-                  <User size={18} className="text-amber-500 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-xs text-gray-500">Posted By</p>
-                    <UserProfileCard
-                      userId={job.postedBy._id}
-                      userName={`${job.postedBy.firstName} ${job.postedBy.lastName}`}
-                    >
-                      <p className="font-semibold text-xs sm:text-sm cursor-pointer hover:text-amber-600 transition truncate">
-                        {job.postedBy.firstName} {job.postedBy.lastName}
-                      </p>
-                    </UserProfileCard>
-                  </div>
-                </div>
+  <User size={18} className="text-amber-500 flex-shrink-0" />
+  <div className="min-w-0">
+    <p className="text-xs text-gray-500">Posted By</p>
+    {job.postedBy ? (
+      <UserProfileCard
+        userId={job.postedBy._id}
+        userName={`${job.postedBy.firstName} ${job.postedBy.lastName}`}
+      >
+        <p className="font-semibold text-xs sm:text-sm cursor-pointer hover:text-amber-600 transition truncate">
+          {job.postedBy.firstName} {job.postedBy.lastName}
+        </p>
+      </UserProfileCard>
+    ) : (
+      <div className="flex items-center gap-2">
+        {job.companyLogo && (
+          <img src={job.companyLogo} alt={job.company} className="w-5 h-5 rounded-full" />
+        )}
+        <p className="font-semibold text-xs sm:text-sm truncate">
+          {job.company} (Verified Company)
+        </p>
+      </div>
+    )}
+  </div>
+</div>
 
                 <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
                   <Clock size={18} className="text-amber-500 flex-shrink-0" />
