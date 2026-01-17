@@ -45,6 +45,31 @@ interface AggregationStats {
   byCategory: { category: string; count: number }[];
 }
 
+/* ================= VALID CATEGORIES (must match your backend enum) ================= */
+
+const VALID_CATEGORIES = [
+  'Technology',
+  'Healthcare',
+  'Finance',
+  'Education',
+  'Marketing',
+  'Sales',
+  'Design',
+  'Engineering',
+  'Customer Service',
+  'Human Resources',
+  'Operations',
+  'Legal',
+  'Construction',
+  'Hospitality',
+  'Retail',
+  'Transportation',
+  'Manufacturing',
+  'Agriculture',
+  'Real Estate',
+  'Other'
+];
+
 /* ================= HELPERS ================= */
 
 const mapJobType = (type: string): string => {
@@ -54,6 +79,108 @@ const mapJobType = (type: string): string => {
   if (t.includes("contract")) return "contract";
   if (t.includes("intern")) return "internship";
   return "full_time";
+};
+
+/**
+ * Map external category to valid enum category
+ */
+const mapCategory = (externalCategory: string): string => {
+  if (!externalCategory) return "Other";
+  
+  const cat = externalCategory.toLowerCase();
+  
+  // Technology related
+  if (cat.includes("engineer") || cat.includes("software") || cat.includes("developer") || 
+      cat.includes("tech") || cat.includes("data") || cat.includes("infrastructure") ||
+      cat.includes("platform") || cat.includes("product") || cat.includes("it ") ||
+      cat.includes("security") || cat.includes("cloud") || cat.includes("devops")) {
+    return "Technology";
+  }
+  
+  // Engineering (non-software)
+  if (cat.includes("mechanical") || cat.includes("electrical") || cat.includes("civil")) {
+    return "Engineering";
+  }
+  
+  // Design
+  if (cat.includes("design") || cat.includes("ux") || cat.includes("ui") || 
+      cat.includes("creative") || cat.includes("brand")) {
+    return "Design";
+  }
+  
+  // Sales
+  if (cat.includes("sales") || cat.includes("account executive") || cat.includes("business development") ||
+      cat.includes("revenue") || cat.includes("commercial")) {
+    return "Sales";
+  }
+  
+  // Marketing
+  if (cat.includes("marketing") || cat.includes("growth") || cat.includes("communications") ||
+      cat.includes("content") || cat.includes("social media") || cat.includes("pr ") ||
+      cat.includes("public relations")) {
+    return "Marketing";
+  }
+  
+  // Customer Service
+  if (cat.includes("customer") || cat.includes("support") || cat.includes("success") ||
+      cat.includes("community") || cat.includes("experience") || cat.includes("service")) {
+    return "Customer Service";
+  }
+  
+  // Human Resources
+  if (cat.includes("hr") || cat.includes("human") || cat.includes("people") || 
+      cat.includes("talent") || cat.includes("recruiting") || cat.includes("recruit")) {
+    return "Human Resources";
+  }
+  
+  // Finance
+  if (cat.includes("finance") || cat.includes("accounting") || cat.includes("financial") ||
+      cat.includes("tax") || cat.includes("treasury") || cat.includes("audit")) {
+    return "Finance";
+  }
+  
+  // Legal
+  if (cat.includes("legal") || cat.includes("compliance") || cat.includes("policy") ||
+      cat.includes("attorney") || cat.includes("counsel")) {
+    return "Legal";
+  }
+  
+  // Operations
+  if (cat.includes("operations") || cat.includes("ops") || cat.includes("supply") ||
+      cat.includes("logistics") || cat.includes("facilities") || cat.includes("admin")) {
+    return "Operations";
+  }
+  
+  // Healthcare
+  if (cat.includes("health") || cat.includes("medical") || cat.includes("clinical") ||
+      cat.includes("nurse") || cat.includes("doctor") || cat.includes("pharmacy")) {
+    return "Healthcare";
+  }
+  
+  // Education
+  if (cat.includes("education") || cat.includes("training") || cat.includes("learning") ||
+      cat.includes("teacher") || cat.includes("instructor")) {
+    return "Education";
+  }
+  
+  // Real Estate
+  if (cat.includes("real estate") || cat.includes("property")) {
+    return "Real Estate";
+  }
+  
+  // Retail
+  if (cat.includes("retail") || cat.includes("store") || cat.includes("merchant")) {
+    return "Retail";
+  }
+  
+  // Hospitality
+  if (cat.includes("hospitality") || cat.includes("hotel") || cat.includes("restaurant") ||
+      cat.includes("food") || cat.includes("travel")) {
+    return "Hospitality";
+  }
+  
+  // Default
+  return "Other";
 };
 
 const cleanHtml = (html: string): string =>
@@ -74,7 +201,11 @@ const COMPANIES = [
   { name: "Dropbox", token: "dropbox" },
 ];
 
-const MAX_JOBS = 50;
+// Only fetch 25 jobs total
+const MAX_JOBS = 25;
+
+// Jobs per company (will fetch ~7 from each to get 25 total after shuffle)
+const JOBS_PER_COMPANY = 8;
 
 /* ================= COMPONENT ================= */
 
@@ -135,13 +266,17 @@ export default function JobAggregatorPage() {
         if (!listRes.ok) return [];
         const listData = await listRes.json();
         
-        // Then fetch each job's details to get the description
-        const jobPromises = (listData.jobs || []).slice(0, 15).map(async (job: any) => {
+        // Only take JOBS_PER_COMPANY jobs from each company
+        const jobPromises = (listData.jobs || []).slice(0, JOBS_PER_COMPANY).map(async (job: any) => {
           try {
             // Fetch individual job details for full description
             const detailRes = await fetch(
               `https://boards-api.greenhouse.io/v1/boards/${company.token}/jobs/${job.id}`
             );
+            
+            const rawCategory = job.departments?.[0]?.name || "Other";
+            const mappedCategory = mapCategory(rawCategory);
+            
             if (!detailRes.ok) {
               return {
                 title: cleanText(job.title),
@@ -149,7 +284,7 @@ export default function JobAggregatorPage() {
                 description: DUMMY_DESCRIPTION,
                 location: job.location?.name || "Remote",
                 type: mapJobType(job.type),
-                category: job.departments?.[0]?.name || "Other",
+                category: mappedCategory,
                 applyUrl: job.absolute_url,
                 source: company.name,
                 sourceId: `${company.token}-${job.id}`,
@@ -158,6 +293,7 @@ export default function JobAggregatorPage() {
             }
             
             const detailData = await detailRes.json();
+            const detailRawCategory = detailData.departments?.[0]?.name || rawCategory;
             
             return {
               title: cleanText(detailData.title || job.title),
@@ -165,7 +301,7 @@ export default function JobAggregatorPage() {
               description: cleanHtml(detailData.content || "") || DUMMY_DESCRIPTION,
               location: detailData.location?.name || job.location?.name || "Remote",
               type: mapJobType(detailData.type || job.type),
-              category: detailData.departments?.[0]?.name || job.departments?.[0]?.name || "Other",
+              category: mapCategory(detailRawCategory),
               applyUrl: detailData.absolute_url || job.absolute_url,
               source: company.name,
               sourceId: `${company.token}-${job.id}`,
@@ -179,7 +315,7 @@ export default function JobAggregatorPage() {
               description: DUMMY_DESCRIPTION,
               location: job.location?.name || "Remote",
               type: mapJobType(job.type),
-              category: job.departments?.[0]?.name || "Other",
+              category: mapCategory(job.departments?.[0]?.name || "Other"),
               applyUrl: job.absolute_url,
               source: company.name,
               sourceId: `${company.token}-${job.id}`,
@@ -204,7 +340,7 @@ export default function JobAggregatorPage() {
       [flatJobs[i], flatJobs[j]] = [flatJobs[j], flatJobs[i]];
     }
 
-    // Limit to MAX_JOBS
+    // Limit to MAX_JOBS (25)
     return flatJobs.slice(0, MAX_JOBS);
   };
 
@@ -331,7 +467,7 @@ export default function JobAggregatorPage() {
               <Globe size={32} />
               <h1 className="text-3xl font-bold">Job Aggregator</h1>
             </div>
-            <p className="text-amber-100">Import jobs from Stripe, Airbnb, Shopify & Dropbox</p>
+            <p className="text-amber-100">Import {MAX_JOBS} jobs from Stripe, Airbnb, Shopify & Dropbox</p>
           </div>
 
           <div className="flex gap-3 flex-wrap">
@@ -533,7 +669,7 @@ export default function JobAggregatorPage() {
           
           <div className="p-6 max-h-[500px] overflow-y-auto">
             <div className="space-y-3">
-              {fetchedJobs.slice(0, 20).map((job) => (
+              {fetchedJobs.map((job) => (
                 <div
                   key={job.sourceId}
                   className="p-4 bg-gray-50 rounded-lg flex justify-between items-start"
@@ -565,11 +701,6 @@ export default function JobAggregatorPage() {
                   </a>
                 </div>
               ))}
-              {fetchedJobs.length > 20 && (
-                <p className="text-center text-gray-500 py-4">
-                  ... and {fetchedJobs.length - 20} more jobs
-                </p>
-              )}
             </div>
           </div>
         </motion.div>
@@ -586,7 +717,7 @@ export default function JobAggregatorPage() {
           How to Use
         </h3>
         <ol className="text-amber-700 space-y-2 text-sm list-decimal list-inside">
-          <li>Click <strong>"Fetch Jobs"</strong> to get jobs from Stripe, Airbnb, Shopify & Dropbox</li>
+          <li>Click <strong>"Fetch Jobs"</strong> to get {MAX_JOBS} jobs from Stripe, Airbnb, Shopify & Dropbox</li>
           <li>Review the fetched jobs in the preview section</li>
           <li>Click <strong>"Save Jobs"</strong> to import them to your database</li>
           <li>Duplicates will be automatically skipped</li>

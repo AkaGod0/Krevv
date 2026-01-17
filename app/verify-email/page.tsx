@@ -10,67 +10,73 @@ export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
+  const type = searchParams.get("type"); // ✅ Extracted type parameter
 
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [message, setMessage] = useState("");
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
-    if (!token) {
+    if (!token || !type) { // ✅ Validate both token and type
       setStatus("error");
-      setMessage("Invalid verification link. No token provided.");
+      setMessage("Invalid verification link. Missing required parameters.");
       return;
     }
 
-    verifyEmail(token);
-  }, [token]);
+    verifyEmail(token, type); // ✅ Pass both to the function
+  }, [token, type]);
 
   // Auto-redirect countdown for success
-  useEffect(() => {
-    if (status === "success" && countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
+ const getLoginPath = () => {
+  return type === "company" ? "/company/login" : "/login";
+};
 
-      return () => clearTimeout(timer);
-    }
+// 2. Updated Auto-redirect countdown
+useEffect(() => {
+  if (status === "success" && countdown > 0) {
+    const timer = setTimeout(() => {
+      setCountdown(countdown - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }
 
-    if (status === "success" && countdown === 0) {
-      router.push("/login");
-    }
-  }, [status, countdown, router]);
+  if (status === "success" && countdown === 0) {
+    // Dynamically redirect based on type
+    router.push(getLoginPath());
+  }
+}, [status, countdown, router, type]);
 
-  const verifyEmail = async (verificationToken: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/verify-email?token=${verificationToken}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Verification failed");
+  const verifyEmail = async (verificationToken: string, accountType: string) => {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/verify-email?token=${verificationToken}&type=${accountType}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
       }
+    );
 
-      setStatus("success");
-      setMessage(data.message || "Email verified successfully!");
-    } catch (err: any) {
-      setStatus("error");
-      setMessage(err.message || "Failed to verify email. The link may be expired or invalid.");
+    // ✅ FIX: Check if response has content before parsing
+    const text = await response.text(); 
+    const data = text ? JSON.parse(text) : {}; 
+
+    if (!response.ok) {
+      throw new Error(data.message || "Verification failed");
     }
-  };
+
+    setStatus("success");
+    setMessage(data.message || "Email verified successfully!");
+  } catch (err: any) {
+    setStatus("error");
+    setMessage(err.message || "Failed to verify email.");
+  }
+};
 
   const handleRetry = () => {
-    if (token) {
+    if (token && type) { // ✅ Ensure both are present for retry
       setStatus("verifying");
       setMessage("");
-      verifyEmail(token);
+      verifyEmail(token, type);
     }
   };
 
@@ -152,13 +158,12 @@ export default function VerifyEmailPage() {
                 </p>
               </div>
 
-              {/* Manual redirect button */}
-              <Link href="/login">
-                <button className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2">
-                  Go to Login Now
-                  <ArrowRight size={20} />
-                </button>
-              </Link>
+             <Link href={getLoginPath()}>
+  <button className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2">
+    Go to {type === "company" ? "Company" : "User"} Login Now
+    <ArrowRight size={20} />
+  </button>
+</Link>
 
               {/* Browse jobs link */}
               <Link href="/jobs">
@@ -208,7 +213,7 @@ export default function VerifyEmailPage() {
 
               {/* Action buttons */}
               <div className="space-y-3">
-                {token && (
+                {token && type && (
                   <button
                     onClick={handleRetry}
                     className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2"

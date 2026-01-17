@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, User, Calendar, Trash2, X, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Star, User, Calendar, Trash2, X, CheckCircle, AlertTriangle, Loader2, Building2 } from "lucide-react";
 import { useAuth, api } from "@/app/context/AuthContext";
 
 interface Review {
@@ -17,6 +17,8 @@ interface Review {
     lastName: string;
     email: string;
     profileImage?: string;
+    companyName?: string;
+    role?: string;
   } | null;
 }
 
@@ -82,13 +84,18 @@ export default function JobReviews({ jobId }: JobReviewsProps) {
         ...formData,
       });
 
+      // ✅ Reset form and hide it BEFORE showing success modal
+      setShowForm(false);
+      setFormData({ rating: 5, comment: "" });
+      
+      // ✅ Fetch reviews immediately to update the list
+      await fetchReviews();
+      
+      // ✅ Then show success modal
       setSuccessModal({
         show: true,
         message: "Review submitted successfully!",
       });
-      setShowForm(false);
-      setFormData({ rating: 5, comment: "" });
-      fetchReviews();
     } catch (err: any) {
       console.error("Error submitting review:", err);
       setErrorModal({
@@ -141,6 +148,28 @@ export default function JobReviews({ jobId }: JobReviewsProps) {
         ))}
       </div>
     );
+  };
+
+  // Helper function to get display name and company info
+  const getReviewerInfo = (review: Review) => {
+    if (!review.user || typeof review.user !== 'object') {
+      return {
+        displayName: review.username || 'Anonymous',
+        companyName: null,
+        isCompany: false,
+      };
+    }
+
+    const isCompany = review.user.role === 'company';
+    const displayName = isCompany 
+      ? review.user.companyName || 'Company User'
+      : `${review.user.firstName || ''} ${review.user.lastName || ''}`.trim() || review.username || 'Anonymous';
+
+    return {
+      displayName,
+      companyName: isCompany ? review.user.companyName : null,
+      isCompany,
+    };
   };
 
   if (loading) {
@@ -275,11 +304,7 @@ export default function JobReviews({ jobId }: JobReviewsProps) {
             </p>
           ) : (
             reviews.map((review) => {
-              const displayName = review.username || 
-                (review.user && typeof review.user === 'object' 
-                  ? `${review.user.firstName || ''} ${review.user.lastName || ''}`.trim() 
-                  : 'Anonymous');
-
+              const reviewerInfo = getReviewerInfo(review);
               const reviewUserId = typeof review.user === 'object' && review.user !== null 
                 ? review.user._id 
                 : review.user;
@@ -293,21 +318,33 @@ export default function JobReviews({ jobId }: JobReviewsProps) {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
-                      <div className="bg-amber-100 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
+                      <div className={`rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0 ${
+                        reviewerInfo.isCompany ? 'bg-blue-100' : 'bg-amber-100'
+                      }`}>
                         {review.user && typeof review.user === 'object' && review.user.profileImage ? (
                           <img
                             src={review.user.profileImage}
-                            alt={displayName}
+                            alt={reviewerInfo.displayName}
                             className="w-full h-full rounded-full object-cover"
                           />
+                        ) : reviewerInfo.isCompany ? (
+                          <Building2 className="text-blue-600" size={16} />
                         ) : (
                           <User className="text-amber-600" size={16} />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-semibold text-gray-800 text-sm sm:text-base truncate">
-                          {displayName}
-                        </h4>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-semibold text-gray-800 text-sm sm:text-base">
+                            {reviewerInfo.displayName}
+                          </h4>
+                          {reviewerInfo.isCompany && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                              <Building2 size={10} />
+                              Company
+                            </span>
+                          )}
+                        </div>
                         {renderStars(review.rating, 14)}
                       </div>
                     </div>
