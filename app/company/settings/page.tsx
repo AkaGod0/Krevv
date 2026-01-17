@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
-import Cookies from "js-cookie";
+import { useAuth, api, getToken } from "@/app/context/AuthContext";
 import {
   Settings,
   Lock,
-  Bell,
   Shield,
   Trash2,
   Eye,
@@ -18,15 +16,12 @@ import {
   CheckCircle,
   AlertCircle,
   ChevronLeft,
-  Mail,
   Key,
   LogOut,
   AlertTriangle,
   Building2,
   X,
 } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 interface CompanySettings {
   email: string;
@@ -37,6 +32,8 @@ interface CompanySettings {
 
 export default function CompanySettingsPage() {
   const router = useRouter();
+  const { user, loading: authLoading, logout } = useAuth();
+  
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("security");
@@ -63,17 +60,22 @@ export default function CompanySettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
-  // Notification preferences
-  const [notifications, setNotifications] = useState({
-    emailApplications: true,
-    emailWeeklyReport: true,
-    emailMarketing: false,
-    emailJobExpiry: true,
-  });
-
   useEffect(() => {
+    if (authLoading) return;
+
+    const token = getToken();
+    if (!token) {
+      router.push("/company/login");
+      return;
+    }
+
+    if (!user?.companyName) {
+      router.push("/company/login");
+      return;
+    }
+
     fetchSettings();
-  }, []);
+  }, [authLoading, user]);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ show: true, type, message });
@@ -81,16 +83,8 @@ export default function CompanySettingsPage() {
   };
 
   const fetchSettings = async () => {
-    const token = Cookies.get("company_token") || localStorage.getItem("company_token");
-    if (!token) {
-      router.push("/company/login");
-      return;
-    }
-
     try {
-      const res = await axios.get(`${API}/company/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/company/profile");
       const data = res.data.data;
       setSettings({
         email: data.email,
@@ -101,7 +95,7 @@ export default function CompanySettingsPage() {
     } catch (err: any) {
       console.error("Error fetching settings:", err);
       if (err.response?.status === 401) {
-        router.push("/company/login");
+        logout();
       }
     } finally {
       setLoading(false);
@@ -121,18 +115,13 @@ export default function CompanySettingsPage() {
       return;
     }
 
-    const token = Cookies.get("company_token") || localStorage.getItem("company_token");
     setChangingPassword(true);
 
     try {
-      await axios.post(
-        `${API}/company/change-password`,
-        {
-          currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post("/company/change-password", {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
       showToast("success", "Password changed successfully");
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: any) {
@@ -143,10 +132,7 @@ export default function CompanySettingsPage() {
   };
 
   const handleLogout = () => {
-    Cookies.remove("company_token");
-    localStorage.removeItem("company_token");
-    localStorage.removeItem("company_data");
-    router.push("/company/login");
+    logout();
   };
 
   const handleDeleteAccount = async () => {
@@ -161,7 +147,7 @@ export default function CompanySettingsPage() {
     setDeleteConfirmText("");
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="animate-spin text-amber-500" size={40} />
@@ -171,7 +157,6 @@ export default function CompanySettingsPage() {
 
   const tabs = [
     { id: "security", label: "Security", icon: Lock },
-    { id: "notifications", label: "Notifications", icon: Bell },
     { id: "danger", label: "Danger Zone", icon: AlertTriangle },
   ];
 
@@ -398,130 +383,6 @@ export default function CompanySettingsPage() {
                     </span>
                   </div>
                 </div>
-              </motion.div>
-            )}
-
-            {/* Notifications Tab */}
-            {activeTab === "notifications" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Mail size={20} className="text-amber-500" />
-                  Email Notifications
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">New Applications</p>
-                      <p className="text-sm text-gray-500">
-                        Get notified when someone applies to your job postings
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setNotifications({
-                          ...notifications,
-                          emailApplications: !notifications.emailApplications,
-                        })
-                      }
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        notifications.emailApplications ? "bg-amber-500" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                          notifications.emailApplications ? "translate-x-6" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">Weekly Report</p>
-                      <p className="text-sm text-gray-500">
-                        Receive a weekly summary of your job posting performance
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setNotifications({
-                          ...notifications,
-                          emailWeeklyReport: !notifications.emailWeeklyReport,
-                        })
-                      }
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        notifications.emailWeeklyReport ? "bg-amber-500" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                          notifications.emailWeeklyReport ? "translate-x-6" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">Job Expiry Reminders</p>
-                      <p className="text-sm text-gray-500">
-                        Get reminded when your job postings are about to expire
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setNotifications({
-                          ...notifications,
-                          emailJobExpiry: !notifications.emailJobExpiry,
-                        })
-                      }
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        notifications.emailJobExpiry ? "bg-amber-500" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                          notifications.emailJobExpiry ? "translate-x-6" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-800">Marketing & Updates</p>
-                      <p className="text-sm text-gray-500">
-                        Receive news about new features and tips
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setNotifications({
-                          ...notifications,
-                          emailMarketing: !notifications.emailMarketing,
-                        })
-                      }
-                      className={`relative w-12 h-6 rounded-full transition ${
-                        notifications.emailMarketing ? "bg-amber-500" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                          notifications.emailMarketing ? "translate-x-6" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => showToast("success", "Notification preferences saved")}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg transition"
-                >
-                  <CheckCircle size={18} />
-                  Save Preferences
-                </button>
               </motion.div>
             )}
 

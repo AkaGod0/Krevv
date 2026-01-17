@@ -4,20 +4,18 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
-import Cookies from "js-cookie";
+import { useAuth, api } from "@/app/context/AuthContext";
 import {
   Building2, Phone, Edit, Camera, Save, 
   Loader2, CheckCircle, AlertCircle, ChevronLeft, Linkedin, 
   Twitter, FileText, Link as LinkIcon, User, MapPin
 } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
 const industries = ["Technology", "Healthcare", "Finance", "Education", "E-commerce", "Marketing", "Consulting", "Other"];
 
 export default function CompanyProfilePage() {
   const router = useRouter();
+  const { user, loading: authLoading, isAuthenticated, logout, refreshUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [company, setCompany] = useState<any>(null);
@@ -29,7 +27,18 @@ export default function CompanyProfilePage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [toast, setToast] = useState({ show: false, type: "success" as "success" | "error", message: "" });
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) return;
+
+    // If not authenticated or not a company, redirect
+    if (!isAuthenticated || !user?.companyName) {
+      router.push("/company/login");
+      return;
+    }
+
+    fetchProfile();
+  }, [authLoading, isAuthenticated, user]);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ show: true, type, message });
@@ -37,18 +46,16 @@ export default function CompanyProfilePage() {
   };
 
   const fetchProfile = async () => {
-    const token = Cookies.get("company_token") || localStorage.getItem("company_token");
-    if (!token) return router.push("/company/login");
-
     try {
-      const res = await axios.get(`${API}/company/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/company/profile");
       setCompany(res.data.data);
       setFormData(res.data.data);
       setLogoPreview(res.data.data.logo);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Fetch error:", err);
+      if (err.response?.status === 401) {
+        logout();
+      }
     } finally {
       setLoading(false);
     }
@@ -68,7 +75,6 @@ export default function CompanyProfilePage() {
   };
 
   const handleSave = async () => {
-    const token = Cookies.get("company_token") || localStorage.getItem("company_token");
     setSaving(true);
 
     // WHITELISTING: Explicitly define only the fields the backend allows
@@ -90,14 +96,15 @@ export default function CompanyProfilePage() {
     };
 
     try {
-      const res = await axios.put(`${API}/company/profile`, dataToSend, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.put("/company/profile", dataToSend);
       
       setCompany(res.data.data);
       setFormData(res.data.data);
       setIsEditing(false);
       showToast("success", "Profile updated successfully!");
+      
+      // Refresh user data in AuthContext
+      await refreshUser();
     } catch (err: any) {
       console.error("Update Error:", err.response?.data);
       const backendMessage = err.response?.data?.message;
@@ -108,11 +115,23 @@ export default function CompanyProfilePage() {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Loader2 className="animate-spin text-amber-500" size={40} />
-    </div>
-  );
+  // Show loading while auth is checking
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-amber-500" size={40} />
+      </div>
+    );
+  }
+
+  // If not authenticated after loading, show loader (redirect will happen)
+  if (!isAuthenticated || !user?.companyName) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-amber-500" size={40} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

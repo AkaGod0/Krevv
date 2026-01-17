@@ -98,12 +98,12 @@ export default function Navbar() {
 
                       {/* ✅ LINK: Company Profile or User Profile */}
                       <Link
-                        href={isCompany ? "/company/profile" : "/profile"}
+                        href={isCompany ? "/company/dashboard" : "/profile"}
                         className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-amber-50"
                         onClick={() => setUserMenuOpen(false)}
                       >
                         {isCompany ? <Building2 size={16} /> : <User size={16} />}
-                        {isCompany ? "Company Profile" : "My Profile"}
+                        {isCompany ? "Company Dashboard" : "My Profile"}
                       </Link>
 
                       {/* ✅ LINK: My Jobs */}

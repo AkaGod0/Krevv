@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
-import Cookies from "js-cookie";
+import { useAuth, api, getToken } from "@/app/context/AuthContext";
 import {
   Users,
   Search,
@@ -23,8 +22,6 @@ import {
   MoreVertical,
   X,
 } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 interface Application {
   _id: string;
@@ -57,6 +54,8 @@ interface Pagination {
 
 export default function CompanyApplicationsPage() {
   const router = useRouter();
+  const { user, loading: authLoading, logout } = useAuth();
+  
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0, pages: 0 });
@@ -73,9 +72,17 @@ export default function CompanyApplicationsPage() {
   });
 
   useEffect(() => {
+    if (authLoading) return;
+
+    const token = getToken();
+    if (!token) {
+      router.push("/company/login");
+      return;
+    }
+
     fetchApplications();
     fetchJobs();
-  }, [pagination.page, statusFilter, jobFilter]);
+  }, [authLoading, pagination.page, statusFilter, jobFilter]);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ show: true, type, message });
@@ -83,12 +90,8 @@ export default function CompanyApplicationsPage() {
   };
 
   const fetchJobs = async () => {
-    const token = Cookies.get("company_token");
-    if (!token) return;
     try {
-      const res = await axios.get(`${API}/company/jobs?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/company/jobs?limit=100");
       setJobs(res.data.data || []);
     } catch (err) {
       console.error("Error fetching jobs:", err);
@@ -96,12 +99,6 @@ export default function CompanyApplicationsPage() {
   };
 
   const fetchApplications = async () => {
-    const token = Cookies.get("company_token");
-    if (!token) {
-      router.push("/company/login");
-      return;
-    }
-
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -111,40 +108,23 @@ export default function CompanyApplicationsPage() {
       if (statusFilter) params.append("status", statusFilter);
       if (jobFilter) params.append("jobId", jobFilter);
 
-      const res = await axios.get(`${API}/company/applications?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get(`/company/applications?${params}`);
 
       setApplications(res.data.data || []);
       setPagination(res.data.pagination || { page: 1, limit: 10, total: 0, pages: 0 });
     } catch (err: any) {
       console.error("Error fetching applications:", err);
-      if (err.response?.status === 401) router.push("/company/login");
+      if (err.response?.status === 401) {
+        logout();
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleStatusChange = async (applicationId: string, newStatus: string) => {
-    const token = Cookies.get("company_token");
-
-    if (!token) {
-      showToast("error", "Session expired. Please login again.");
-      router.push("/company/login");
-      return;
-    }
-
     try {
-      await axios.patch(
-        `${API}/company/applications/${applicationId}/status`,
-        { status: newStatus },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
+      await api.patch(`/company/applications/${applicationId}/status`, { status: newStatus });
 
       setApplications((prev) =>
         prev.map((app) =>
@@ -189,7 +169,7 @@ export default function CompanyApplicationsPage() {
     );
   };
 
-  if (loading && applications.length === 0) {
+  if (authLoading || (loading && applications.length === 0)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="animate-spin text-amber-500" size={40} />

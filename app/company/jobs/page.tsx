@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/app/context/AuthContext";
-import Cookies from "js-cookie";
+import { api, useAuth } from "@/app/context/AuthContext";
 import {
   Briefcase,
   Plus,
@@ -27,8 +26,6 @@ import {
   Eye,
   Users,
 } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL;
 
 interface Job {
   _id: string;
@@ -54,6 +51,7 @@ interface Pagination {
 
 export default function CompanyJobsPage() {
   const router = useRouter();
+  const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 10, total: 0, pages: 0 });
@@ -68,52 +66,47 @@ export default function CompanyJobsPage() {
   });
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated || !user?.companyName) {
+      router.push("/company/login");
+      return;
+    }
+
     fetchJobs();
-  }, [pagination.page, statusFilter]);
+  }, [authLoading, isAuthenticated, user, pagination.page, statusFilter]);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ show: true, type, message });
     setTimeout(() => setToast({ show: false, type: "success", message: "" }), 3000);
   };
 
-  const fetchJobs = async () => {
-    const token = Cookies.get("company_token") || localStorage.getItem("company_token");
-    if (!token) {
-      router.push("/company/login");
-      return;
-    }
-
-    try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-      });
-      if (statusFilter) params.append("status", statusFilter);
-
-      const res = await api.get(`${API}/company/jobs?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setJobs(res.data.data || []);
-      setPagination(res.data.pagination || { page: 1, limit: 10, total: 0, pages: 0 });
-    } catch (err: any) {
-      console.error("Error fetching jobs:", err);
-      if (err.response?.status === 401) {
-        router.push("/company/login");
+const fetchJobs = async () => {
+  try {
+    setLoading(true);
+    // Use the relative path provided by your AuthContext's api instance
+    const res = await api.get("/company/jobs", {
+      params: {
+        page: pagination.page,
+        limit: pagination.limit,
+        status: statusFilter || undefined,
       }
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
 
+    if (res.data.success) {
+      setJobs(res.data.data || []);
+      setPagination(res.data.pagination || pagination);
+    }
+  } catch (err: any) {
+    console.error("Error fetching jobs:", err);
+    // If you see 404 "Company profile not found" here, move to step 2
+  } finally {
+    setLoading(false);
+  }
+};
   const handleStatusChange = async (jobId: string, newStatus: string) => {
-    const token = Cookies.get("company_token") || localStorage.getItem("company_token");
     try {
-      await api.patch(
-        `${API}/company/jobs/${jobId}/status`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.patch(`/company/jobs/${jobId}/status`, { status: newStatus });
       showToast("success", `Job status updated to ${newStatus}`);
       fetchJobs();
     } catch (err) {
@@ -125,12 +118,9 @@ export default function CompanyJobsPage() {
   const handleDelete = async (jobId: string) => {
     if (!confirm("Are you sure you want to delete this job? This action cannot be undone.")) return;
 
-    const token = Cookies.get("company_token") || localStorage.getItem("company_token");
     setDeleting(jobId);
     try {
-      await api.delete(`${API}/company/jobs/${jobId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/company/jobs/${jobId}`);
       showToast("success", "Job deleted successfully");
       fetchJobs();
     } catch (err) {
@@ -175,7 +165,7 @@ export default function CompanyJobsPage() {
     return types[type] || type;
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="animate-spin text-amber-500" size={40} />
@@ -225,7 +215,7 @@ export default function CompanyJobsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Stats Cards - Adjusted to 3 columns since views are removed */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
             <div className="flex items-center gap-3">
@@ -266,6 +256,7 @@ export default function CompanyJobsPage() {
           </div>
         </div>
 
+        {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
@@ -401,7 +392,6 @@ export default function CompanyJobsPage() {
             >
               <ChevronLeft size={20} />
             </button>
-            {/* ... pagination logic remains same ... */}
             <button
               onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
               disabled={pagination.page === pagination.pages}

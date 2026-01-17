@@ -353,7 +353,7 @@ export default function JobsClient() {
                   {job.isExternal ? (
                     <span>Via {job.company}</span>
                   ) : (
-                    <span>Posted by {job.postedBy?.firstName || "Unknown"} {job.postedBy?.lastName || ""}</span>
+                    <span>Posted by {job.postedBy?.firstName || ""} {job.postedBy?.lastName || ""}  {job.company}</span>
                   )}
                 </div>
               </motion.div>

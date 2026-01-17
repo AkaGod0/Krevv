@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -22,6 +22,8 @@ import {
   EyeOff,
   ArrowRight,
   ArrowLeft,
+  Clock,
+  Inbox,
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -59,6 +61,7 @@ export default function CompanyRegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [countdown, setCountdown] = useState(20); // 20 seconds countdown
 
   const [formData, setFormData] = useState({
     // Step 1: Company Info
@@ -81,6 +84,18 @@ export default function CompanyRegisterPage() {
     contactPersonRole: "",
     contactPersonEmail: "",
   });
+
+  // Countdown timer for success modal
+  useEffect(() => {
+    if (success && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (success && countdown === 0) {
+      router.push("/company/dashboard");
+    }
+  }, [success, countdown, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -170,10 +185,6 @@ export default function CompanyRegisterPage() {
         setSuccess(true);
         // Store token
         localStorage.setItem("company_token", response.data.data.token);
-        // Redirect after 2 seconds
-        setTimeout(() => {
-          router.push("/company/dashboard");
-        }, 2000);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Registration failed. Please try again.");
@@ -188,16 +199,93 @@ export default function CompanyRegisterPage() {
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center"
+          className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full"
         >
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="text-green-500" size={40} />
+          {/* Success Icon */}
+          <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+            <CheckCircle className="text-white" size={48} />
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center"
+            >
+              <Mail className="text-white" size={16} />
+            </motion.div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Registration Successful!</h2>
-          <p className="text-gray-600 mb-4">
-            Your company account has been created. Please check your email to verify your account.
-          </p>
-          <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+
+          {/* Main Message */}
+          <h2 className="text-2xl font-bold text-gray-800 mb-3 text-center">
+            Registration Successful! 🎉
+          </h2>
+          
+          {/* Email Verification Notice */}
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-6 mb-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Inbox className="text-amber-600" size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800 mb-1">
+                  Check Your Email
+                </h3>
+                <p className="text-sm text-gray-600">
+                  We've sent a verification email to:
+                </p>
+                <p className="text-sm font-semibold text-amber-700 mt-1 break-all">
+                  {formData.email}
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 border border-amber-100">
+              <p className="text-sm text-gray-700 mb-2">
+                <strong>Next steps:</strong>
+              </p>
+              <ol className="text-sm text-gray-600 space-y-1 ml-4 list-decimal">
+                <li>Open your email inbox</li>
+                <li>Look for our verification email (check spam if needed)</li>
+                <li>Click the verification link to activate your account</li>
+                <li>Start posting jobs and finding talent!</li>
+              </ol>
+            </div>
+          </div>
+
+          {/* Countdown Timer */}
+          <div className="flex items-center justify-center gap-2 mb-6 text-gray-600">
+            <Clock size={20} className="text-amber-500" />
+            <p className="text-sm">
+              Redirecting to dashboard in{" "}
+              <span className="font-bold text-amber-600 text-lg">{countdown}</span>{" "}
+              seconds
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => router.push("/company/dashboard")}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
+            >
+              Go to Dashboard Now
+            </button>
+            <button
+              onClick={() => window.location.href = `mailto:${formData.email}`}
+              className="flex-1 px-6 py-3 bg-white border-2 border-gray-200 hover:border-amber-300 text-gray-700 font-semibold rounded-lg transition-all hover:bg-amber-50"
+            >
+              Open Email
+            </button>
+          </div>
+
+          {/* Additional Info */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center">
+              Didn't receive the email? Check your spam folder or{" "}
+              <button className="text-amber-600 hover:text-amber-700 font-medium underline">
+                resend verification email
+              </button>
+            </p>
+          </div>
         </motion.div>
       </div>
     );

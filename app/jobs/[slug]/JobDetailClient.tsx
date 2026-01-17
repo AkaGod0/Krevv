@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import axios from "axios";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase,
@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, api } from "@/app/context/AuthContext";
 import UserProfileCard from "@/components/UserProfileCard";
+import CompanyProfileCard from "@/components/CompanyPostCard";
 import JobReviews from "@/components/JobReviews";
 import ReportJobModal from "@/components/Reportjobmodal";
 
@@ -37,18 +38,20 @@ interface Job {
   salary: string;
   type: string;
   status: string;
-  category: string; // ✅ NEW: Category field
+  category: string; 
+  companyId?: string;
   experienceLevel: string;
   requirements: string[];
   responsibilities: string[];
   createdAt: string;
-  companyLogo:string;
-  postedBy: {
+  companyLogo: string;
+  // ✅ Add these fields for company-posted jobs
+  postedByCompany?: string | { _id: string; companyName: string; logo?: string; slug?: string };
+  postedBy?: {
     _id: string;
     firstName: string;
     lastName: string;
     email: string;
-    
   };
 }
 
@@ -69,7 +72,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
   const [hasApplied, setHasApplied] = useState(false);
   const [checkingApplication, setCheckingApplication] = useState(false);
   const [toast, setToast] = useState("");
-  const [showReportModal, setShowReportModal] = useState(false); // ✅ NEW: Report modal state
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     fetchJob();
@@ -83,7 +86,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
 
   const fetchJob = async () => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         `${process.env.NEXT_PUBLIC_API_URL}/jobs/slug/${slug}`
       );
       console.log('✅ Job fetched:', res.data);
@@ -184,7 +187,6 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
     }
   };
 
-  // ✅ NEW: Handle Report Job
   const handleReportJob = () => {
     if (!user) {
       if (typeof window !== 'undefined') {
@@ -205,6 +207,49 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
       internship: "bg-pink-100 text-pink-700 border-pink-300",
     };
     return colors[type] || "bg-gray-100 text-gray-700 border-gray-300";
+  };
+
+  // ✅ Helper function to get company ID from various possible field structures
+  const getCompanyId = (): string | null => {
+    if (!job) return null;
+    
+    // Check postedByCompany first (this is what company.service.ts sets)
+    if (job.postedByCompany) {
+      if (typeof job.postedByCompany === 'string') {
+        return job.postedByCompany;
+      }
+      if (typeof job.postedByCompany === 'object' && job.postedByCompany._id) {
+        return job.postedByCompany._id;
+      }
+    }
+    
+    // Fallback to companyId if it exists
+    if (job.companyId) {
+      return job.companyId;
+    }
+    
+    return null;
+  };
+
+  // ✅ Helper to check if job was posted by a company
+  const isCompanyPosted = (): boolean => {
+    return !job?.postedBy && !!getCompanyId();
+  };
+
+  // ✅ Get company info if postedByCompany is populated
+  const getCompanyInfo = () => {
+    if (!job?.postedByCompany) return null;
+    
+    if (typeof job.postedByCompany === 'object') {
+      return {
+        _id: job.postedByCompany._id,
+        name: job.postedByCompany.companyName,
+        logo: job.postedByCompany.logo,
+        slug: job.postedByCompany.slug,
+      };
+    }
+    
+    return null;
   };
 
   if (loading || authLoading || checkingApplication) {
@@ -230,9 +275,12 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
     );
   }
 
+  const companyId = getCompanyId();
+  const companyInfo = getCompanyInfo();
+
   return (
     <main className="bg-[#fffaf6] min-h-screen text-gray-800">
-      {/* ✅ Report Job Modal */}
+      {/* Report Job Modal */}
       <ReportJobModal
         jobId={job._id}
         jobTitle={job.title}
@@ -284,7 +332,6 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
               >
                 {job.type.replace("_", " ").toUpperCase()}
               </span>
-              {/* ✅ Display category badge */}
               <span className="px-2.5 sm:px-4 py-1 rounded-full text-xs sm:text-sm font-semibold bg-purple-100 text-purple-700 border border-purple-300">
                 {job.category}
               </span>
@@ -575,7 +622,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
               )}
 
               <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-gray-200">
-                {/* ✅ Category Display */}
+                {/* Category Display */}
                 <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
                   <Tag size={18} className="text-purple-500 flex-shrink-0" />
                   <div className="min-w-0">
@@ -600,31 +647,58 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
                   </div>
                 </div>
 
+                {/* ✅ FIXED: Posted By section - handles both user and company posts */}
                 <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
-  <User size={18} className="text-amber-500 flex-shrink-0" />
-  <div className="min-w-0">
-    <p className="text-xs text-gray-500">Posted By</p>
-    {job.postedBy ? (
-      <UserProfileCard
-        userId={job.postedBy._id}
-        userName={`${job.postedBy.firstName} ${job.postedBy.lastName}`}
-      >
-        <p className="font-semibold text-xs sm:text-sm cursor-pointer hover:text-amber-600 transition truncate">
-          {job.postedBy.firstName} {job.postedBy.lastName}
-        </p>
-      </UserProfileCard>
-    ) : (
-      <div className="flex items-center gap-2">
-        {job.companyLogo && (
-          <img src={job.companyLogo} alt={job.company} className="w-5 h-5 rounded-full" />
-        )}
-        <p className="font-semibold text-xs sm:text-sm truncate">
-          {job.company} (Verified Company)
-        </p>
-      </div>
-    )}
-  </div>
-</div>
+                  <User size={18} className="text-amber-500 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-500">Posted By</p>
+                    
+                    {/* If posted by a user */}
+                    {job.postedBy ? (
+                      <UserProfileCard
+                        userId={job.postedBy._id}
+                        userName={`${job.postedBy.firstName} ${job.postedBy.lastName}`}
+                      >
+                        <p className="font-semibold text-xs sm:text-sm cursor-pointer hover:text-amber-600 transition truncate">
+                          {job.postedBy.firstName} {job.postedBy.lastName}
+                        </p>
+                      </UserProfileCard>
+                    ) : companyId ? (
+                      /* If posted by a company - use the correct ID */
+                      <CompanyProfileCard companyId={companyId}>
+                        <div className="flex items-center gap-2 cursor-pointer group">
+                          {(companyInfo?.logo || job.companyLogo) && (
+                            <img 
+                              src={companyInfo?.logo || job.companyLogo} 
+                              alt={job.company} 
+                              className="w-5 h-5 rounded-full border border-amber-200 object-cover" 
+                            />
+                          )}
+                          <p className="font-semibold text-xs sm:text-sm truncate group-hover:text-amber-600 transition">
+                            {companyInfo?.name || job.company}
+                            <span className="text-[10px] bg-blue-50 text-blue-600 px-1 rounded ml-1 font-normal italic">
+                              Verified
+                            </span>
+                          </p>
+                        </div>
+                      </CompanyProfileCard>
+                    ) : (
+                      /* Fallback: Just show company name without link */
+                      <div className="flex items-center gap-2">
+                        {job.companyLogo && (
+                          <img 
+                            src={job.companyLogo} 
+                            alt={job.company} 
+                            className="w-5 h-5 rounded-full border border-amber-200 object-cover" 
+                          />
+                        )}
+                        <p className="font-semibold text-xs sm:text-sm truncate">
+                          {job.company}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex items-center gap-2 sm:gap-3 text-gray-600">
                   <Clock size={18} className="text-amber-500 flex-shrink-0" />
@@ -659,7 +733,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
                 Copy Link
               </button>
 
-              {/* ✅ NEW: Report Job Button */}
+              {/* Report Job Button */}
               <button
                 onClick={handleReportJob}
                 className="w-full bg-white hover:bg-red-50 text-red-600 border border-red-300 font-semibold py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base"
