@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, MapPin, Globe, Briefcase, ExternalLink, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { api } from "@/app/context/AuthContext";
+import { api } from "../app/context/AuthContext";
 
 interface CompanyProfileCardProps {
   companyId: string;

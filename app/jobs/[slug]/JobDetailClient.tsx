@@ -23,7 +23,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, api } from "../../context/AuthContext";
 import UserProfileCard from "../../../components/UserProfileCard";
-import CompanyPostCard from "../../../components/CompanyPostCard";
+import CompanyPostCard from "../../../components/CompanyPostcard";
 import JobReviews from "../../../components/JobReviews";
 import ReportJobModal from "../../../components/Reportjobmodal";
 
