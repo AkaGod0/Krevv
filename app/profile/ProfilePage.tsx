@@ -130,8 +130,8 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="flex items-center gap-3 md:gap-4">
               <div className="bg-amber-500 rounded-full w-16 h-16 md:w-20 md:h-20 flex items-center justify-center text-white text-2xl md:text-3xl font-bold flex-shrink-0">
-                {user.firstName[0]}
-                {user.lastName[0]}
+          {user.firstName?.[0] || 'U'}
+{user.lastName?.[0] || 'U'}
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">

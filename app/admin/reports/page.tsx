@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Tag,
+  Building2,
 } from "lucide-react";
 import { useAdmin, adminApi } from "../context/AdminContext";
 import Link from "next/link";
@@ -33,13 +34,17 @@ interface Report {
     firstName: string;
     lastName: string;
     email: string;
-  };
+    companyName?: string;  // ✅ For companies
+    isCompany?: boolean;   // ✅ For companies
+  } | null;
   reportedBy: {
     _id: string;
     firstName: string;
     lastName: string;
     email: string;
-  };
+    companyName?: string;
+    isCompany?: boolean; 
+  } | null;
   reason: string;
   description: string;
   reportedAt: string;
@@ -88,7 +93,8 @@ export default function AdminReportsPage() {
           report.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           report.jobCompany?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           report.reportedBy?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          report.reportedBy?.lastName?.toLowerCase().includes(searchTerm.toLowerCase())
+          report.reportedBy?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          report.reportedBy?.companyName?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -120,7 +126,6 @@ export default function AdminReportsPage() {
         status: newStatus,
       });
 
-      // Update local state
       setReports((prevReports) =>
         prevReports.map((report) =>
           report._id === reportId ? { ...report, status: newStatus } : report
@@ -173,6 +178,20 @@ export default function AdminReportsPage() {
       default:
         return <Flag size={16} className="flex-shrink-0" />;
     }
+  };
+
+  // ✅ Helper function to get user/company display name
+  const getUserDisplayName = (user: Report['reportedBy'] | Report['postedBy']): string => {
+    if (!user) return 'Unknown User';
+    
+    // ✅ Check if it's a company
+    if (user.isCompany && user.companyName) {
+      return user.companyName;
+    }
+    
+    // Regular user
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    return fullName || user.email || 'Unknown User';
   };
 
   const stats = {
@@ -445,25 +464,49 @@ export default function AdminReportsPage() {
                   </div>
                 )}
 
-                {/* Info Grid */}
+                {/* Info Grid - ✅ WITH COMPANY SUPPORT */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 py-4 border-t border-gray-200">
                   <div className="flex items-center gap-2 text-gray-600">
-                    <User size={16} className="text-gray-400" />
+                    {report.reportedBy?.isCompany ? (
+                      <Building2 size={16} className="text-blue-600" />
+                    ) : (
+                      <User size={16} className="text-gray-400" />
+                    )}
                     <div>
                       <p className="text-xs text-gray-500">Reported By</p>
-                      <p className="text-sm font-semibold">
-                        {report.reportedBy.firstName} {report.reportedBy.lastName}
+                      <p className="text-sm font-semibold flex items-center gap-1">
+                        {getUserDisplayName(report.reportedBy)}
+                        {report.reportedBy?.isCompany && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                            Company
+                          </span>
+                        )}
                       </p>
+                      {report.reportedBy && report.reportedBy.email && (
+                        <p className="text-xs text-gray-400">{report.reportedBy.email}</p>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-gray-600">
-                    <User size={16} className="text-gray-400" />
+                    {report.postedBy?.isCompany ? (
+                      <Building2 size={16} className="text-blue-600" />
+                    ) : (
+                      <User size={16} className="text-gray-400" />
+                    )}
                     <div>
                       <p className="text-xs text-gray-500">Job Posted By</p>
-                      <p className="text-sm font-semibold">
-                        {report.postedBy.firstName} {report.postedBy.lastName}
+                      <p className="text-sm font-semibold flex items-center gap-1">
+                        {getUserDisplayName(report.postedBy)}
+                        {report.postedBy?.isCompany && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                            Company
+                          </span>
+                        )}
                       </p>
+                      {report.postedBy && report.postedBy.email && (
+                        <p className="text-xs text-gray-400">{report.postedBy.email}</p>
+                      )}
                     </div>
                   </div>
 
