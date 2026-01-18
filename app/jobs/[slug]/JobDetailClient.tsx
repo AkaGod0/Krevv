@@ -22,11 +22,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth, api } from "@/app/context/AuthContext";
-import UserProfileCard from "@/components/UserProfileCard";
-import CompanyProfileCard from "@/components/CompanyPostCard";
-import JobReviews from "@/components/JobReviews";
-import ReportJobModal from "@/components/Reportjobmodal";
+import { useAuth, api } from "../../context/AuthContext";
+import UserProfileCard from "../../../components/UserProfileCard";
+import CompanyProfileCard from "../../../components/CompanyPostCard";
+import JobReviews from "../../../components/JobReviews";
+import ReportJobModal from "../../../components/Reportjobmodal";
 
 interface Job {
   _id: string;
