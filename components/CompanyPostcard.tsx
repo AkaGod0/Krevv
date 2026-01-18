@@ -11,7 +11,7 @@ interface CompanyProfileCardProps {
   children: React.ReactNode;
 }
 
-export default function CompanyProfileCard({ companyId, children }: CompanyProfileCardProps) {
+export default function CompanyPostCard({ companyId, children }: CompanyProfileCardProps) {
   const [showCard, setShowCard] = useState(false);
   const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(false);

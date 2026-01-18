@@ -23,7 +23,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth, api } from "../../context/AuthContext";
 import UserProfileCard from "../../../components/UserProfileCard";
-import CompanyProfileCard from "../../../components/CompanyPostCard";
+import CompanyPostCard from "../../../components/CompanyPostCard";
 import JobReviews from "../../../components/JobReviews";
 import ReportJobModal from "../../../components/Reportjobmodal";
 
@@ -669,7 +669,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
                       </UserProfileCard>
                     ) : companyId ? (
                       /* If posted by a company - use the correct ID */
-                      <CompanyProfileCard companyId={companyId}>
+                      <CompanyPostCard companyId={companyId}>
                         <div className="flex items-center gap-2 cursor-pointer group">
                           {(companyInfo?.logo || job.companyLogo) && (
                             <img 
@@ -685,7 +685,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
                             </span>
                           </p>
                         </div>
-                      </CompanyProfileCard>
+                      </CompanyPostCard>
                     ) : (
                       /* Fallback: Just show company name without link */
                       <div className="flex items-center gap-2">
