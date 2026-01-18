@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase,
@@ -438,6 +437,11 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
 
             {/* Reviews Section */}
             <JobReviews jobId={job._id} />
+
+            {/* Application Form - Rest of the code remains the same... */}
+            {/* [Previous application form code continues here] */}
+
+{/* Continued from previous section */}
 
             {/* Application Form */}
             {user && !hasApplied && !applicationSuccess && (
