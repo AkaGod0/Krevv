@@ -245,7 +245,7 @@ export default function HomePage() {
             </motion.div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-tight mb-6 px-4">
-              The future of work is here — <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">flexible, global,</span> and in your hands
+              The future of work is here — <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">flexible, global,</span> and built on trust
             </h1>
 
             <motion.p
@@ -254,7 +254,7 @@ export default function HomePage() {
               transition={{ delay: 0.4, duration: 0.8 }}
               className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium text-amber-100 max-w-4xl mx-auto mb-12 leading-relaxed px-4"
             >
-              We are your trusted guide through the world of freelancing and remote jobs, helping you build a career that fits your life, not the other way around.
+              We are your trusted marketplace through the world of freelancing and remote jobs, helping you build a career that fits your life, so that careers and businesses grow.
             </motion.p>
 
             <motion.div
