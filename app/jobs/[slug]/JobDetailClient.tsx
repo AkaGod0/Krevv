@@ -44,7 +44,9 @@ interface Job {
   responsibilities: string[];
   createdAt: string;
   companyLogo: string;
-  // ✅ Add these fields for company-posted jobs
+  externalApplyLink?: string; 
+  applicationEmail?: string;
+  deadline?: string;
   postedByCompany?: string | { _id: string; companyName: string; logo?: string; slug?: string };
   postedBy?: {
     _id: string;
@@ -88,7 +90,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
       const res = await api.get(
         `${process.env.NEXT_PUBLIC_API_URL}/jobs/slug/${slug}`
       );
-      console.log('✅ Job fetched:', res.data);
+  
       setJob(res.data);
     } catch (err) {
       console.error("Error fetching job:", err);
@@ -103,7 +105,7 @@ export default function JobDetailClient({ params }: { params: Promise<{ slug: st
     setCheckingApplication(true);
     try {
       const res = await api.get(`/applications/check/${job._id}`);
-      console.log('✅ Application check result:', res.data);
+    
       setHasApplied(res.data.applied);
     } catch (err) {
       console.error('Error checking application:', err);

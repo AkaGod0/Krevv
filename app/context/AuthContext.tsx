@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      console.log('[Auth] Token found, length:', storedToken.length);
+ 
       setToken(storedToken);
       
       const payload = decodeToken(storedToken);
@@ -127,11 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      console.log('[Auth] Token payload:', { 
-        type: payload.type, 
-        email: payload.email,
-        exp: new Date(payload.exp * 1000).toISOString()
-      });
+     
 
       // Check if token is expired
       if (payload.exp && payload.exp * 1000 < Date.now()) {
@@ -145,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isCompany = payload.type === 'company';
       const endpoint = isCompany ? '/company/profile' : '/users/me';
       
-      console.log('[Auth] Fetching profile from:', endpoint);
+     
 
       const res = await api.get(endpoint);
       const userData = res.data.data || res.data;
@@ -155,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userData.companyLogo = userData.logo;
       }
       
-      console.log('[Auth] ✅ User loaded:', userData.companyName || userData.email);
+      
       setUser(userData);
       
     } catch (error: any) {
@@ -184,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('No token received from server');
     }
 
-    console.log('[Auth] 🎫 Token received, saving...');
+    
     
     // Save to cookie
     Cookies.set('auth_token', authToken, {
@@ -201,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Failed to save authentication token');
     }
     
-    console.log('[Auth] ✅ Token saved to cookie');
+
     setToken(authToken);
     
     // Decode and fetch profile
@@ -210,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Invalid token format');
     }
     
-    console.log('[Auth] Token type:', payload.type);
+  
 
     const isCompany = payload.type === 'company';
     const endpoint = isCompany ? '/company/profile' : '/users/me';
@@ -227,14 +223,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userData.companyLogo = userData.logo;
     }
     
-    console.log('[Auth] ✅ Profile loaded:', userData.companyName || userData.email);
+
     setUser(userData);
     
     return payload;
   };
 
   const login = async (email: string, password: string) => {
-    console.log('[Auth] 🔐 User login:', email);
+   
     const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, { 
       email, 
       password 
@@ -243,7 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const companyLogin = async (email: string, password: string) => {
-    console.log('[Auth] 🏢 Company login:', email);
+   
     const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/company/login`, { 
       email, 
       password 
@@ -266,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
-    console.log('[Auth] 🔄 Refreshing user data...');
+    
     await checkAuth();
   };
 

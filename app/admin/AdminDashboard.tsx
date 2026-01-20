@@ -17,7 +17,7 @@ import {
   Eye,
   Star,
   Flag,
-  Building2, // Added for companies
+  Building2,
 } from "lucide-react";
 import { useAdmin, adminApi } from "./context/AdminContext";
 import Link from "next/link";
@@ -25,7 +25,7 @@ import Link from "next/link";
 interface Stats {
   totalUsers: number;
   totalJobs: number;
-  totalCompanies: number; // Added
+  totalCompanies: number;
   blockedUsers: number;
   activeUsers: number;
   totalPosts: number;
@@ -36,7 +36,7 @@ interface Stats {
   totalReports: number;
   recentUsers: any[];
   recentJobs: any[];
-  recentCompanies: any[]; // Added
+  recentCompanies: any[];
 }
 
 export default function AdminDashboard() {
@@ -72,14 +72,12 @@ export default function AdminDashboard() {
         adminApi.get("/posts?limit=1000"),
         adminApi.get("/reviews").catch(() => ({ data: [] })),
         adminApi.get("/jobs/reports/all").catch(() => ({ data: [] })),
-        adminApi.get("/admin/companies").catch(() => ({ data: [] })), // Call to companies
+        adminApi.get("/admin/companies").catch(() => ({ data: [] })),
       ]);
 
       const users = usersRes.data || [];
       const jobs = jobsRes.data || [];
       const blocked = blockedRes.data || [];
-      
-      // Safety check to ensure companies data is read correctly
       const companies = companiesRes.data?.data || companiesRes.data || [];
       
       let posts = Array.isArray(postsRes.data) ? postsRes.data : (postsRes.data?.data || []);
@@ -124,12 +122,19 @@ export default function AdminDashboard() {
     );
   }
 
-  // Restored your exact card logic
   const mainStatCards = [
     { title: "Total Users", value: stats.totalUsers, icon: Users, textColor: "text-blue-600", bgColor: "bg-blue-100" },
     { title: "Total Jobs", value: stats.totalJobs, icon: Briefcase, textColor: "text-green-600", bgColor: "bg-green-100" },
     { title: "Companies", value: stats.totalCompanies, icon: Building2, textColor: "text-amber-600", bgColor: "bg-amber-100" },
     { title: "Blocked Users", value: stats.blockedUsers, icon: UserX, textColor: "text-red-600", bgColor: "bg-red-100" },
+  ];
+
+  // Secondary stats added back here
+  const engagementStats = [
+    { title: "Posts", value: stats.totalPosts, icon: FileText, color: "text-purple-600" },
+    { title: "Likes", value: stats.totalLikes, icon: Heart, color: "text-rose-600" },
+    { title: "Comments", value: stats.totalComments, icon: MessageCircle, color: "text-indigo-600" },
+    { title: "Total Views", value: stats.totalViews, icon: Eye, color: "text-cyan-600" },
   ];
 
   return (
@@ -162,8 +167,25 @@ export default function AdminDashboard() {
         })}
       </div>
 
+      {/* Engagement Stats Section Added Back */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {engagementStats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div key={stat.title} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + index * 0.1 }} className="bg-white p-3 sm:p-4 rounded-lg shadow border border-gray-100 flex items-center gap-3">
+              <div className={`${stat.color} bg-gray-50 p-2 rounded-md`}>
+                <Icon size={18} />
+              </div>
+              <div>
+                <p className="text-[10px] sm:text-xs text-gray-500 uppercase font-bold tracking-wider">{stat.title}</p>
+                <p className="text-sm sm:text-lg font-bold text-gray-800">{stat.value.toLocaleString()}</p>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-        {/* Recent Users - RESTORED YOUR EXACT VERIFICATION LOGIC */}
         <div className="bg-white rounded-lg md:rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6">
             <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2"><Users className="text-blue-600" /> Recent Users</h2>
@@ -177,7 +199,6 @@ export default function AdminDashboard() {
                   <div>
                     <div className="flex items-center gap-1.5">
                       <p className="font-semibold text-gray-800 text-sm">{user.firstName} {user.lastName}</p>
-                      {/* THIS IS YOUR ORIGINAL LOGIC - UNCHANGED */}
                       {user.isEmailVerified ? (
                         <span className="px-1.5 py-0.5 bg-blue-100 text-blue-600 text-[9px] font-semibold rounded">Verified</span>
                       ) : (
@@ -192,7 +213,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Jobs */}
         <div className="bg-white rounded-lg md:rounded-xl shadow-lg p-3 sm:p-4 md:p-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6">
             <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2"><Briefcase className="text-green-600" /> Recent Jobs</h2>
@@ -209,7 +229,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Quick Actions Restored */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-gray-900 rounded-xl p-6 shadow-xl">
         <h2 className="text-white text-lg font-bold mb-4 flex items-center gap-2"><Activity size={20}/> Management</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

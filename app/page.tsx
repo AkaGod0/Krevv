@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle,
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -77,7 +78,6 @@ export default function HomePage() {
   const [searching, setSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-  // Dummy description - ONLY for external jobs
   const DUMMY_DESCRIPTION = "Join our team and be part of an innovative company that values creativity, collaboration, and growth. We offer competitive benefits and a dynamic work environment.";
 
   const getSalary = (salary: string) => {
@@ -123,6 +123,7 @@ export default function HomePage() {
     fetchData();
   }, []);
 
+  // ✅ FIXED: Search jobs from your database
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.trim().length < 2) {
@@ -133,21 +134,34 @@ export default function HomePage() {
     setSearching(true);
     setShowSearchResults(true);
     try {
-      const jobsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/jobs`);
+      // Fetch jobs from your database
+      const jobsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=100`);
       const allJobs = jobsRes.data?.data || jobsRes.data || [];
+      
+      // Filter jobs based on search query
       const filteredJobs = (Array.isArray(allJobs) ? allJobs : [])
         .filter((job: Job) => {
           const searchLower = query.toLowerCase();
-          return job.title?.toLowerCase().includes(searchLower) || job.company?.toLowerCase().includes(searchLower) || job.location?.toLowerCase().includes(searchLower) || job.description?.toLowerCase().includes(searchLower);
+          return (
+            job.title?.toLowerCase().includes(searchLower) || 
+            job.company?.toLowerCase().includes(searchLower) || 
+            job.location?.toLowerCase().includes(searchLower) || 
+            job.description?.toLowerCase().includes(searchLower)
+          );
         })
         .slice(0, 5);
 
-      const postsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/posts`);
+      // Fetch and filter posts
+      const postsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/posts?limit=100`);
       const allPosts = postsRes.data?.data || postsRes.data || [];
       const filteredPosts = (Array.isArray(allPosts) ? allPosts : [])
         .filter((post: Post) => {
           const searchLower = query.toLowerCase();
-          return post.title?.toLowerCase().includes(searchLower) || stripHtmlAndImages(post.content).toLowerCase().includes(searchLower) || post.author?.toLowerCase().includes(searchLower);
+          return (
+            post.title?.toLowerCase().includes(searchLower) || 
+            stripHtmlAndImages(post.content).toLowerCase().includes(searchLower) || 
+            post.author?.toLowerCase().includes(searchLower)
+          );
         })
         .slice(0, 5);
 
@@ -286,6 +300,7 @@ export default function HomePage() {
                   )}
                 </div>
 
+                {/* ✅ FIXED: Search results now link external jobs to company site */}
                 <AnimatePresence>
                   {showSearchResults && (
                     <motion.div 
@@ -304,19 +319,49 @@ export default function HomePage() {
                           {searchResults.jobs.length > 0 && (
                             <div className="p-4">
                               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2 px-2">
-                                <Briefcase size={14} /> Jobs
+                                <Briefcase size={14} /> Jobs ({searchResults.jobs.length})
                               </h3>
                               <div className="space-y-1">
                                 {searchResults.jobs.map((job) => (
-                                  <Link key={job._id} href={`/jobs/${job.slug}`} onClick={clearSearch} className="block p-3 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100">
-                                    <div className="flex items-start gap-3">
-                                      <div className="bg-amber-100 rounded-lg p-2 flex-shrink-0 text-amber-600"><Briefcase size={16} /></div>
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-gray-900 truncate text-sm">{job.title}</h4>
-                                        <p className="text-xs text-gray-500 truncate">{job.company} • {job.location}</p>
+                                  /* ✅ External jobs go to company site, user jobs go to details page */
+                                  job.isExternal ? (
+                                    <a 
+                                      key={job._id} 
+                                      href={job.externalApplyUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      onClick={clearSearch} 
+                                      className="block p-3 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <div className="bg-amber-100 rounded-lg p-2 flex-shrink-0 text-amber-600">
+                                          <Globe size={16} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <h4 className="font-bold text-gray-900 truncate text-sm">{job.title}</h4>
+                                          <p className="text-xs text-gray-500 truncate">{job.company} • {job.location} • External</p>
+                                        </div>
+                                        <ExternalLink size={14} className="text-gray-400 flex-shrink-0" />
                                       </div>
-                                    </div>
-                                  </Link>
+                                    </a>
+                                  ) : (
+                                    <Link 
+                                      key={job._id} 
+                                      href={`/jobs/${job.slug}`} 
+                                      onClick={clearSearch} 
+                                      className="block p-3 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <div className="bg-amber-100 rounded-lg p-2 flex-shrink-0 text-amber-600">
+                                          <Briefcase size={16} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <h4 className="font-bold text-gray-900 truncate text-sm">{job.title}</h4>
+                                          <p className="text-xs text-gray-500 truncate">{job.company} • {job.location}</p>
+                                        </div>
+                                      </div>
+                                    </Link>
+                                  )
                                 ))}
                               </div>
                             </div>
@@ -324,7 +369,7 @@ export default function HomePage() {
                           {searchResults.posts.length > 0 && (
                             <div className="p-4">
                               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2 px-2">
-                                <FileText size={14} /> Blog
+                                <FileText size={14} /> Blog ({searchResults.posts.length})
                               </h3>
                               <div className="space-y-1">
                                 {searchResults.posts.map((post) => (
@@ -391,7 +436,6 @@ export default function HomePage() {
               <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-amber-600 transition-colors line-clamp-2">{job.title}</h3>
               <p className="text-sm font-semibold text-gray-600 mb-3">{job.company}</p>
               
-              {/* ✅ Description - DUMMY for external, REAL for user-posted */}
               <p className="text-sm text-gray-500 mb-4 line-clamp-2">
                 {job.isExternal ? DUMMY_DESCRIPTION : (job.description || DUMMY_DESCRIPTION)}
               </p>
@@ -404,6 +448,8 @@ export default function HomePage() {
                   <DollarSign size={16} className="text-emerald-500 flex-shrink-0" /> <span className="truncate">{getSalary(job.salary)}</span>
                 </div>
               </div>
+
+              {/* ✅ FIXED: External jobs go to company site */}
               {job.isExternal ? (
                 <a href={job.externalApplyUrl} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all">
                   Apply at {job.company} <ExternalLink size={16} />

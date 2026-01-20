@@ -28,6 +28,7 @@ interface Job {
   description: string;
   company: string;
   location: string;
+  state: string;
   category: string;
   salary: string;
   type: string;
@@ -314,7 +315,7 @@ export default function JobsClient() {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <MapPin size={16} className="text-amber-500 flex-shrink-0" />
-                    <span className="line-clamp-1">{job.location || "Remote"}</span>
+                    <span className="line-clamp-1">{job.location || job.state || "Remote"}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <Tag size={16} className="text-purple-500 flex-shrink-0" />

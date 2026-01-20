@@ -17,18 +17,18 @@ export default function CompanyPostCard({ companyId, children }: CompanyProfileC
   const [loading, setLoading] = useState(false);
 
   // LOG EVERY RENDER
-  console.log("🛠️ Component ID Prop:", companyId);
+
 
   useEffect(() => {
     // LOG EVERY TIME HOVER CHANGES
-    console.log("🖱️ Hover State:", showCard);
+
 
     if (showCard && !company && companyId) {
-      console.log("📡 Sending request to:", `/company/${companyId}`);
+     
       setLoading(true);
       api.get(`/company/${companyId}`)
         .then((res) => {
-          console.log("✅ Received data:", res.data);
+         
           setCompany(res.data);
         })
         .catch((err) => console.error("❌ Request failed:", err))

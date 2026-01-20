@@ -27,9 +27,9 @@ export default function ManageCompanies() {
 
   const fetchCompanies = async () => {
     try {
-      console.log("[ManageCompanies] Fetching companies...");
+  
       const res = await adminApi.get("/admin/companies");
-      console.log("[ManageCompanies] Companies fetched:", res.data);
+  
       setCompanies(res.data.data || res.data || []);
     } catch (error: any) {
       console.error("[ManageCompanies] Error fetching companies:", error);
@@ -70,17 +70,12 @@ export default function ManageCompanies() {
     setError("");
     
     try {
-      console.log("=== DELETE COMPANY REQUEST ===");
-      console.log("Company ID:", deleteModal.id);
-      console.log("Company Name:", deleteModal.name);
-      console.log("API Base URL:", process.env.NEXT_PUBLIC_API_URL);
-      console.log("Full endpoint URL:", `${process.env.NEXT_PUBLIC_API_URL}/admin/companies/${deleteModal.id}`);
-      
+     
       // Make DELETE request
       const response = await adminApi.delete(`/admin/companies/${deleteModal.id}`);
       
       console.log("=== DELETE SUCCESS ===");
-      console.log("Response:", response.data);
+   
       
       // Remove from local state
       setCompanies(companies.filter(c => c._id !== deleteModal.id));

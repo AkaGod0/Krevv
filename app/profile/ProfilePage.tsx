@@ -72,7 +72,7 @@ export default function ProfilePage() {
         bio: formData.bio,
       };
 
-      console.log('📤 Sending update:', updateData);
+    
 
       await api.patch("/users/me", updateData);
 

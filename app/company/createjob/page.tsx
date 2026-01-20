@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api } from "@/app/context/AuthContext"; // Changed to use your context's API instance
+import { api } from "@/app/context/AuthContext"; 
 import Cookies from "js-cookie";
 import {
   Briefcase,
@@ -74,12 +74,8 @@ export default function CompanyCreateJobPage() {
     salaryMin: "",
     salaryMax: "",
     experienceLevel: "",
-    applicationEmail: "",
-    applicationUrl: "",
-    deadline: "",
     requirements: [""],
     responsibilities: [""],
-    tags: [""],
   });
 
   const handleChange = (
@@ -89,17 +85,20 @@ export default function CompanyCreateJobPage() {
     setError("");
   };
 
-  const handleArrayChange = (field: "requirements" | "responsibilities" | "tags", index: number, value: string) => {
+  // Fixed: Removed "tags" from the allowed keys
+  const handleArrayChange = (field: "requirements" | "responsibilities", index: number, value: string) => {
     const newArray = [...formData[field]];
     newArray[index] = value;
     setFormData({ ...formData, [field]: newArray });
   };
 
-  const addArrayItem = (field: "requirements" | "responsibilities" | "tags") => {
+  // Fixed: Removed "tags" from the allowed keys
+  const addArrayItem = (field: "requirements" | "responsibilities") => {
     setFormData({ ...formData, [field]: [...formData[field], ""] });
   };
 
-  const removeArrayItem = (field: "requirements" | "responsibilities" | "tags", index: number) => {
+  // Fixed: Removed "tags" from the allowed keys
+  const removeArrayItem = (field: "requirements" | "responsibilities", index: number) => {
     const newArray = formData[field].filter((_, i) => i !== index);
     setFormData({ ...formData, [field]: newArray.length ? newArray : [""] });
   };
@@ -131,7 +130,6 @@ export default function CompanyCreateJobPage() {
     setLoading(true);
     setError("");
 
-    // Changed from "company_token" to "auth_token" to match your AuthContext
     const token = Cookies.get("auth_token");
 
     if (!token) {
@@ -141,18 +139,14 @@ export default function CompanyCreateJobPage() {
     }
 
     try {
-      // Filter out empty array items
       const cleanedData = {
         ...formData,
         requirements: formData.requirements.filter((r) => r.trim()),
         responsibilities: formData.responsibilities.filter((r) => r.trim()),
-        tags: formData.tags.filter((t) => t.trim()),
         salaryMin: formData.salaryMin ? Number(formData.salaryMin) : undefined,
         salaryMax: formData.salaryMax ? Number(formData.salaryMax) : undefined,
-        deadline: formData.deadline ? new Date(formData.deadline) : undefined,
       };
 
-      // Used the 'api' instance which automatically handles the Authorization header
       const response = await api.post(`/company/jobs`, cleanedData);
 
       if (response.data.success) {
@@ -190,7 +184,6 @@ export default function CompanyCreateJobPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <Link
             href="/company/dashboard"
@@ -203,7 +196,6 @@ export default function CompanyCreateJobPage() {
           <p className="text-gray-600 mt-1">Fill in the details to create a new job posting</p>
         </div>
 
-        {/* Error Message */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -215,9 +207,7 @@ export default function CompanyCreateJobPage() {
           </motion.div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -330,7 +320,6 @@ export default function CompanyCreateJobPage() {
             </div>
           </motion.div>
 
-          {/* Compensation */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -389,7 +378,6 @@ export default function CompanyCreateJobPage() {
             </div>
           </motion.div>
 
-          {/* Requirements */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -431,7 +419,6 @@ export default function CompanyCreateJobPage() {
             </div>
           </motion.div>
 
-          {/* Responsibilities */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -473,111 +460,6 @@ export default function CompanyCreateJobPage() {
             </div>
           </motion.div>
 
-          {/* Application Settings */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white rounded-xl shadow-sm p-6"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Mail className="text-amber-500" size={20} />
-              Application Settings
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Application Email
-                </label>
-                <input
-                  type="email"
-                  name="applicationEmail"
-                  value={formData.applicationEmail}
-                  onChange={handleChange}
-                  placeholder="hr@company.com"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Application URL (External)
-                </label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="url"
-                    name="applicationUrl"
-                    value={formData.applicationUrl}
-                    onChange={handleChange}
-                    placeholder="https://company.com/careers/apply"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Application Deadline
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="date"
-                    name="deadline"
-                    value={formData.deadline}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Tags */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white rounded-xl shadow-sm p-6"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Tag className="text-pink-500" size={20} />
-              Tags (Optional)
-            </h2>
-
-            <div className="space-y-3">
-              {formData.tags.map((tag, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tag}
-                    onChange={(e) => handleArrayChange("tags", index, e.target.value)}
-                    placeholder={`Tag ${index + 1} (e.g., React, Remote, Startup)`}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeArrayItem("tags", index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArrayItem("tags")}
-                className="flex items-center gap-2 text-amber-600 hover:text-amber-700 font-medium"
-              >
-                <Plus size={20} />
-                Add Tag
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Submit Buttons */}
           <div className="flex gap-4 justify-end">
             <Link
               href="/company/dashboard"

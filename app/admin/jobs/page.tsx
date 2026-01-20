@@ -97,7 +97,7 @@ export default function AdminJobsPage() {
   const fetchJobs = async () => {
     try {
       const res = await adminApi.get("/admin/jobs");
-      console.log("✅ Jobs fetched:", res.data);
+     
       setJobs(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Error fetching jobs:", err);
