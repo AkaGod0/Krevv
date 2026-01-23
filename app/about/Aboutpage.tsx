@@ -23,7 +23,7 @@ export default function AboutPage() {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="max-w-4xl text-lg text-gray-600 leading-relaxed"
         >
-          We're a professional job posting and career discovery platform designed to connect{" "}
+          We're a professional job marketplace and career discovery platform designed to connect{" "}
           <strong className="text-yellow-700">verified employers</strong> with{" "}
           <strong className="text-yellow-700">qualified job seekers</strong> in a secure, transparent, and accountable environment.
           <br /><br />
