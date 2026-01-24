@@ -308,7 +308,7 @@ export default function PostDetail({ slug }: { slug: string }) {
                         <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-200">
                           <div className="flex items-center gap-1 text-xs text-gray-400">
                             <Shield className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">Administrator & Content Creator</span>
+                            <span className="truncate">Administrator & Creator</span>
                           </div>
                         </div>
                       </div>
