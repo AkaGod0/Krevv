@@ -798,7 +798,7 @@ export default function JobApplicationsPage({
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/marketplace/services/${order.serviceId}/chat`}>
+                    <Link href={`/marketplace/chat/${order.serviceId}/`}>
                       <button className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl">
                         <MessageCircle size={18} />
                         Open Chat
@@ -1047,7 +1047,7 @@ export default function JobApplicationsPage({
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  <Link href={`/marketplace/services/${selectedOrder.serviceId}/chat`} className="w-full">
+                  <Link href={`/marketplace/chat/${selectedOrder.serviceId}`} className="w-full">
                     <button className="w-full flex items-center justify-center gap-3 py-5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-black rounded-2xl transition-all shadow-xl hover:shadow-2xl text-lg">
                       <MessageCircle size={22} />
                       Open Chat

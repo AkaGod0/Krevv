@@ -65,7 +65,7 @@ export default function OrderPaymentPage({
       // Already paid — redirect to chat
       if (data.status !== "pending_payment") {
         const serviceId = data.serviceId?._id || data.serviceId;
-        router.replace(`/marketplace/tasks/${serviceId}/chat`);
+        router.replace(`/marketplace/chat/${serviceId}`);
         return;
       }
 

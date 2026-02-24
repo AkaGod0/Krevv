@@ -85,7 +85,7 @@ export default function CreateServicePage() {
       <header className="bg-white border-b sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/company/postings" className="p-2 hover:bg-gray-100 rounded-full transition">
+            <Link href="/company/jobs" className="p-2 hover:bg-gray-100 rounded-full transition">
               <ChevronLeft size={20} className="text-gray-600" />
             </Link>
             <h1 className="text-xl font-bold text-gray-900 tracking-tight">Create New Service</h1>

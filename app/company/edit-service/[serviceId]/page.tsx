@@ -82,7 +82,7 @@ export default function EditServicePage({ params }: { params: Promise<{ serviceI
         budget: service.budget?.toString() || "",
         category: service.category || "",
         status: service.status || "open",
-        deliveryTime: service.deliveryTime ? service.deliveryTime.split("T")[0] : "",
+      deliveryTime: service.deliveryTime?.toString() || "",
         requiredSkills: service.requiredSkills || [],
       });
     } catch (err: any) {
