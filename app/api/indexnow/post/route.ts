@@ -10,8 +10,8 @@ export async function POST(req: Request) {
     },
     body: JSON.stringify({
       host: "krevv.com",
-      key: "f13aba78e18948c2b26c078fdbfe0e3e",
-      keyLocation: "https://krevv.com/f13aba78e18948c2b26c078fdbfe0e3e.txt",
+      key: "fa8248d8b0224bd89c5693b7035a0fde",
+      keyLocation: "https://krevv.com/fa8248d8b0224bd89c5693b7035a0fde.txt",
       urlList: body.urlList,
     }),
   });
