@@ -261,6 +261,12 @@ const fetchMyJobs = async () => {
                   Create Service
                 </button>
               </Link>
+                 <Link href="/marketplace/payouts" className="flex-1 sm:flex-initial">
+                <button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                  <Sparkles size={20} />
+                  View Payouts
+                </button>
+              </Link>
             </div>
           </div>
 
@@ -370,6 +376,11 @@ const fetchMyJobs = async () => {
               <Link href="/marketplace/create-service">
                 <button className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition shadow-lg">
                   Create Service
+                </button>
+              </Link>
+              <Link href="/marketplace/payouts">
+                <button className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition shadow-lg">
+                  View Payouts
                 </button>
               </Link>
             </div>

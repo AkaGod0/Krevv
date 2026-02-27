@@ -297,6 +297,11 @@ export default function CompanyJobsPage() {
                               Create Service
                             </button>
                           </Link>
+                          <Link href="/marketplace/payouts">
+                            <button className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition shadow-lg">
+                              View Payouts
+                            </button>
+                          </Link>
                         </div>
           </div>
         </div>
@@ -483,11 +488,7 @@ export default function CompanyJobsPage() {
                           
                           {/* ✅ Edit Link */}
                           <Link
-                            href={
-                              job.isService
-                                ? `/company/edit-service/${job._id}`
-                                : `/jobs/edit/${job.slug}`
-                            }
+                            href={`/company/jobs/${job._id}/edit`}
                             className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 text-blue-600 transition-colors"
                           >
                             <Edit size={16} /> Edit

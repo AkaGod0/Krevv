@@ -17,14 +17,19 @@ import {
   Phone,
   Info,
   Building2,
-  LayoutGrid, // Imported for Marketplace
+  LayoutGrid,
+  MessageCircle, 
 } from "lucide-react";
+import { useNotifications } from "../app/hooks/useNotifications"; 
 
 export default function Navbar() {
   const { user, logout, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  //  Get unread message count
+  const { unreadCount } = useNotifications(user?._id);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -92,7 +97,7 @@ export default function Navbar() {
             <Link href="/" className="text-gray-700 hover:text-amber-600 font-medium transition flex items-center gap-2">
               <Home size={18} /> Home
             </Link>
-            {/* Added Marketplace */}
+            
             <Link 
               href="/marketplace" 
               onClick={handleMarketplaceClick}
@@ -100,15 +105,21 @@ export default function Navbar() {
             >
               <LayoutGrid size={18} /> Marketplace
             </Link>
+
             <Link href="/jobs" className="text-gray-700 hover:text-amber-600 font-medium transition flex items-center gap-2">
               <Briefcase size={18} /> Jobs
             </Link>
+
+    
+
             <Link href="/post" className="text-gray-700 hover:text-amber-600 font-medium transition flex items-center gap-2">
               <FileText size={18} /> Posts
             </Link>
+            
             <Link href="/about" className="text-gray-700 hover:text-amber-600 font-medium transition flex items-center gap-2">
               <Info size={18} /> About
             </Link>
+            
             <Link href="/contact" className="text-gray-700 hover:text-amber-600 font-medium transition flex items-center gap-2">
               <Phone size={18} /> Contact
             </Link>
@@ -169,6 +180,21 @@ export default function Navbar() {
                       >
                         <Briefcase size={16} />
                         My Jobs
+                      </Link>
+
+                      {/* ✅ Chat Link in Dropdown Menu */}
+                      <Link
+                        href="/marketplace/chat/chat-list"
+                        className="relative flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-amber-50 transition"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <MessageCircle size={16} /> 
+                        My Chats
+                        {unreadCount > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                            {unreadCount}
+                          </span>
+                        )}
                       </Link>
 
                       {!isCompany && (
@@ -252,7 +278,6 @@ export default function Navbar() {
                 <span className="font-medium">Home</span>
               </Link>
 
-              {/* Mobile Marketplace */}
               <Link
                 href="/marketplace"
                 className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
@@ -273,6 +298,27 @@ export default function Navbar() {
                 <Briefcase size={20} />
                 <span className="font-medium">Jobs</span>
               </Link>
+
+              {/* ✅ Chat Link with Badge - Mobile */}
+              {user && (
+                <Link
+                  href="/marketplace/chat/chat-list"
+                  className="relative flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <MessageCircle size={20} />
+                  <span className="font-medium">Chats</span>
+                  {unreadCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1"
+                    >
+                      {unreadCount}
+                    </motion.span>
+                  )}
+                </Link>
+              )}
 
               <Link
                 href="/post"

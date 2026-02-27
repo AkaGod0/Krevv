@@ -130,6 +130,27 @@ export default function ServiceDetailPage() {
               </div>
             </motion.div>
 
+
+           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-8 border-2 border-slate-100 shadow-xl relative overflow-hidden">
+  <div className="prose max-w-none">
+    <h3 className="text-lg font-bold text-slate-800 mb-3">Required Skills</h3>
+    <div className="flex flex-wrap gap-2">
+      {(Array.isArray(service.requiredSkills)
+        ? service.requiredSkills
+        : service.requiredSkills?.split(",").map((s: string) => s.trim())
+      )?.filter(Boolean).map((skill: string, i: number) => (
+        <span
+          key={i}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-sm font-semibold hover:bg-blue-100 transition-colors"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+          {skill}
+        </span>
+      ))}
+    </div>
+  </div>
+</motion.div>
+
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-3xl p-8 border-2 border-slate-100 shadow-xl">
               <h3 className="text-lg font-bold text-slate-800 mb-6">About the Provider</h3>
               <div className="flex items-start gap-4 mb-6">
