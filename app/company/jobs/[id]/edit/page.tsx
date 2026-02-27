@@ -84,7 +84,7 @@ export default function CompanyEditJobPage() {
     deadline: "",
     requirements: [""],
     responsibilities: [""],
-    tags: [""],
+    
   });
 
   // Fetch existing job data
@@ -139,7 +139,7 @@ export default function CompanyEditJobPage() {
         deadline: formattedDeadline,
         requirements: job.requirements?.length ? job.requirements : [""],
         responsibilities: job.responsibilities?.length ? job.responsibilities : [""],
-        tags: job.tags?.length ? job.tags : [""],
+     
       });
     } catch (err: any) {
       console.error("Error fetching job:", err);
@@ -162,17 +162,17 @@ export default function CompanyEditJobPage() {
     setError("");
   };
 
-  const handleArrayChange = (field: "requirements" | "responsibilities" | "tags", index: number, value: string) => {
+  const handleArrayChange = (field: "requirements" | "responsibilities" , index: number, value: string) => {
     const newArray = [...formData[field]];
     newArray[index] = value;
     setFormData({ ...formData, [field]: newArray });
   };
 
-  const addArrayItem = (field: "requirements" | "responsibilities" | "tags") => {
+  const addArrayItem = (field: "requirements" | "responsibilities" ) => {
     setFormData({ ...formData, [field]: [...formData[field], ""] });
   };
 
-  const removeArrayItem = (field: "requirements" | "responsibilities" | "tags", index: number) => {
+  const removeArrayItem = (field: "requirements" | "responsibilities" , index: number) => {
     const newArray = formData[field].filter((_, i) => i !== index);
     setFormData({ ...formData, [field]: newArray.length ? newArray : [""] });
   };
@@ -214,7 +214,7 @@ export default function CompanyEditJobPage() {
         category: formData.category,
         requirements: formData.requirements.filter((r) => r.trim()),
         responsibilities: formData.responsibilities.filter((r) => r.trim()),
-        tags: formData.tags.filter((t) => t.trim()),
+       
       };
 
       // Only add optional fields if they have values
@@ -646,47 +646,6 @@ export default function CompanyEditJobPage() {
             </div>
           </motion.div>
 
-          {/* Tags */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white rounded-xl shadow-sm p-6"
-          >
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Tag className="text-pink-500" size={20} />
-              Tags (Optional)
-            </h2>
-
-            <div className="space-y-3">
-              {formData.tags.map((tag, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={tag}
-                    onChange={(e) => handleArrayChange("tags", index, e.target.value)}
-                    placeholder={`Tag ${index + 1} (e.g., React, Remote, Startup)`}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeArrayItem("tags", index)}
-                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addArrayItem("tags")}
-                className="flex items-center gap-2 text-amber-600 hover:text-amber-700 font-medium"
-              >
-                <Plus size={20} />
-                Add Tag
-              </button>
-            </div>
-          </motion.div>
 
           {/* Submit Buttons */}
           <div className="flex gap-4 justify-end">

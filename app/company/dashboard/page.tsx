@@ -134,6 +134,7 @@ export default function CompanyDashboardPage() {
     { icon: Briefcase, label: "My Jobs", href: "/company/jobs" },
     { icon: Users, label: "Applications", href: "/company/applications" },
     { icon: UserPlus, label: "Profile", href: "/company/profile" },
+    { icon: MessageCircle, label: "Chats", href: "/marketplace/chat/chat-list" },
     { icon: Settings, label: "Settings", href: "/company/settings" },
   ];
 

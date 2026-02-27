@@ -232,7 +232,7 @@ export default function AdminDashboard() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-gray-900 rounded-xl p-6 shadow-xl">
         <h2 className="text-white text-lg font-bold mb-4 flex items-center gap-2"><Activity size={20}/> Management</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Link href="/admin/users" className="bg-blue-600 text-white p-3 rounded-lg text-center text-sm font-bold hover:bg-blue-700 transition">Manage Users</Link>
+          <Link href="/admin/payouts" className="bg-blue-600 text-white p-3 rounded-lg text-center text-sm font-bold hover:bg-blue-700 transition">Payouts</Link>
           <Link href="/admin/companies" className="bg-amber-600 text-white p-3 rounded-lg text-center text-sm font-bold hover:bg-amber-700 transition">Manage Companies</Link>
           <Link href="/admin/jobs" className="bg-green-600 text-white p-3 rounded-lg text-center text-sm font-bold hover:bg-green-700 transition">Manage Jobs</Link>
           <Link href="/admin/reports" className="bg-red-600 text-white p-3 rounded-lg text-center text-sm font-bold hover:bg-red-700 transition">Reports</Link>
