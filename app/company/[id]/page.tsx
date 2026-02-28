@@ -17,7 +17,9 @@ import {
   Clock,
   ChevronRight,
   DollarSign,
-  Calendar
+  Calendar,
+  Sparkles,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -34,13 +36,27 @@ interface Job {
   createdAt: string;
 }
 
+interface MarketplaceService {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  budget: number;
+  deliveryTime: number;
+  status: string;
+  images?: string[];
+  createdAt: string;
+}
+
 export default function CompanyProfilePage() {
   const { id } = useParams();
   const router = useRouter();
   const [company, setCompany] = useState<any>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [services, setServices] = useState<MarketplaceService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"jobs" | "services">("jobs");
 
   useEffect(() => {
     const fetchCompanyAndJobs = async () => {
@@ -60,6 +76,17 @@ export default function CompanyProfilePage() {
           console.error("Could not fetch company jobs:", jobErr);
           setJobs([]);
         }
+
+        // ✅ 3. NEW: Fetch Marketplace Services posted by this Company
+        try {
+          const servicesRes = await api.get(
+            `${process.env.NEXT_PUBLIC_API_URL}/marketplace/user/${id}/services`
+          );
+          setServices(Array.isArray(servicesRes.data) ? servicesRes.data : []);
+        } catch (serviceErr) {
+          console.error("Could not fetch company marketplace services:", serviceErr);
+          setServices([]);
+        }
       } catch (err: any) {
         console.error("Error fetching company:", err);
         setError(err.response?.data?.message || "Company not found");
@@ -73,8 +100,33 @@ export default function CompanyProfilePage() {
     }
   }, [id]);
 
-  if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-amber-500" size={48} /></div>;
-  if (error || !company) return <div className="h-screen flex items-center justify-center text-gray-600">{error || "Company not found"}</div>;
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="animate-spin text-amber-500" size={48} />
+      </div>
+    );
+  }
+
+  if (error || !company) {
+    return (
+      <div className="h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Building2 size={40} className="text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Company Not Found</h2>
+          <p className="text-gray-600 mb-6">{error || "Company not found"}</p>
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="bg-gray-50 min-h-screen">
@@ -97,7 +149,11 @@ export default function CompanyProfilePage() {
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-end mb-8">
             <div className="bg-white p-2 rounded-2xl shadow-lg border w-32 h-32 flex-shrink-0">
               {company.logo ? (
-                <img src={company.logo} alt={company.companyName} className="w-full h-full object-cover rounded-xl" />
+                <img
+                  src={company.logo}
+                  alt={company.companyName}
+                  className="w-full h-full object-cover rounded-xl"
+                />
               ) : (
                 <div className="w-full h-full bg-amber-50 flex items-center justify-center rounded-xl">
                   <Building2 size={48} className="text-amber-500" />
@@ -107,14 +163,24 @@ export default function CompanyProfilePage() {
             <div className="flex-grow">
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
                 {company.companyName}
-                {company.isVerified !== false && <ShieldCheck className="text-blue-500" size={24} />}
+                {company.isVerified !== false && (
+                  <ShieldCheck className="text-blue-500" size={24} />
+                )}
               </h1>
               <div className="flex flex-wrap gap-4 mt-2 text-gray-600">
-                <span className="flex items-center gap-1"><MapPin size={18} /> {company.location}</span>
-                <span className="flex items-center gap-1"><Briefcase size={18} /> {company.industry}</span>
+                <span className="flex items-center gap-1">
+                  <MapPin size={18} /> {company.location}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Briefcase size={18} /> {company.industry}
+                </span>
                 {company.website && (
                   <a
-                    href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
+                    href={
+                      company.website.startsWith("http")
+                        ? company.website
+                        : `https://${company.website}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-amber-600 hover:underline"
@@ -140,53 +206,148 @@ export default function CompanyProfilePage() {
                 </div>
               </section>
 
-              {/* Jobs Section */}
+              {/* ✅ Jobs & Services Tabs Section */}
               <section>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Briefcase className="text-amber-500" /> Open Positions
-                  </h2>
-                  <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-bold">
-                    {jobs.length} {jobs.length === 1 ? 'Job' : 'Jobs'}
-                  </span>
+                {/* Tab Navigation */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                  <h2 className="text-xl font-bold">Company Listings</h2>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => setActiveTab("jobs")}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                        activeTab === "jobs"
+                          ? "bg-amber-600 text-white shadow-md"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <Briefcase size={16} />
+                        Jobs ({jobs.length})
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("services")}
+                      className={`flex-1 sm:flex-none px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                        activeTab === "services"
+                          ? "bg-purple-600 text-white shadow-md"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <Sparkles size={16} />
+                        Services ({services.length})
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
-                {jobs.length > 0 ? (
-                  <div className="space-y-4">
-                    {jobs.map((job) => (
-                      <Link key={job._id} href={`/jobs/${job.slug || job._id}`}>
-                        <div className="group p-5 border border-gray-100 rounded-xl hover:border-amber-300 hover:bg-amber-50/50 transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-gray-800 group-hover:text-amber-600 transition-colors mb-2">
-                              {job.title}
-                            </h3>
-                            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <MapPin size={14} /> {job.location}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <DollarSign size={14} /> {job.salary}
-                              </span>
-                              <span className="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-1 rounded">
-                                {job.type?.replace('_', ' ').toUpperCase()}
-                              </span>
+                {/* Jobs Tab Content */}
+                {activeTab === "jobs" && (
+                  <div>
+                    {jobs.length > 0 ? (
+                      <div className="space-y-4">
+                        {jobs.map((job) => (
+                          <Link key={job._id} href={`/jobs/${job.slug || job._id}`}>
+                            <div className="group p-5 border border-gray-100 rounded-xl hover:border-amber-300 hover:bg-amber-50/50 transition-all duration-300">
+                              <div className="flex flex-col gap-3">
+                                <h3 className="text-lg font-bold text-gray-800 group-hover:text-amber-600 transition-colors">
+                                  {job.title}
+                                </h3>
+                                <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                                  <span className="flex items-center gap-1">
+                                    <MapPin size={14} /> {job.location}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <DollarSign size={14} /> {job.salary}
+                                  </span>
+                                  <span className="text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-1 rounded">
+                                    {job.type?.replace("_", " ").toUpperCase()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1 text-xs text-gray-400">
+                                    <Clock size={12} />
+                                    Posted {new Date(job.createdAt).toLocaleDateString()}
+                                  </span>
+                                  <span className="flex items-center text-amber-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
+                                    View Job <ChevronRight size={18} />
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1 text-xs text-gray-400 mt-2">
-                              <Clock size={12} />
-                              Posted {new Date(job.createdAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <div className="flex items-center text-amber-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
-                            View Job <ChevronRight size={18} />
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
+                        <p className="text-gray-500">
+                          No active job postings at the moment.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                    <Briefcase size={40} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500">No active job postings at the moment.</p>
+                )}
+
+                {/* ✅ Services Tab Content */}
+                {activeTab === "services" && (
+                  <div>
+                    {services.length > 0 ? (
+                      <div className="space-y-4">
+                        {services.map((service) => (
+                          <Link
+                            key={service._id}
+                            href={`/marketplace/tasks/${service._id}`}
+                          >
+                            <div className="group p-5 border border-purple-100 rounded-xl hover:border-purple-300 hover:bg-purple-50/50 transition-all duration-300">
+                              <div className="flex flex-col gap-3">
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="text-lg font-bold text-gray-800 group-hover:text-purple-600 transition-colors flex-1">
+                                    {service.title}
+                                  </h3>
+                                  <span className="text-xl font-black text-purple-600 flex-shrink-0">
+                                    ${service.budget}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 line-clamp-2">
+                                  {service.description}
+                                </p>
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex flex-wrap gap-2">
+                                    <span className="text-xs font-semibold bg-purple-100 text-purple-600 px-2 py-1 rounded">
+                                      {service.category?.replace("_", " ")}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                                      <Clock size={12} />
+                                      {service.deliveryTime} days delivery
+                                    </span>
+                                    <span
+                                      className={`text-xs font-semibold px-2 py-1 rounded ${
+                                        service.status === "active"
+                                          ? "bg-green-100 text-green-600"
+                                          : "bg-gray-100 text-gray-600"
+                                      }`}
+                                    >
+                                      {service.status}
+                                    </span>
+                                  </div>
+                                  <span className="flex items-center text-purple-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
+                                    View Service <ChevronRight size={18} />
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 bg-purple-50 rounded-xl border border-dashed border-purple-200">
+                        <Sparkles size={40} className="mx-auto text-purple-300 mb-3" />
+                        <p className="text-gray-500">
+                          This company hasn't posted any marketplace services yet.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </section>
@@ -198,16 +359,15 @@ export default function CompanyProfilePage() {
                 <h3 className="font-bold text-gray-900 mb-4">Company Details</h3>
                 <div className="space-y-4 text-sm">
                   <div className="flex items-center gap-3">
-                    <Mail className="text-amber-500" size={16} /> 
-                    <span className="text-gray-600">{company.email}</span>
+                    <Mail className="text-amber-500" size={16} />
+                    <span className="text-gray-600 break-all">{company.email}</span>
                   </div>
                   {company.phone && (
                     <div className="flex items-center gap-3">
-                      <Users className="text-amber-500" size={16} /> 
+                      <Users className="text-amber-500" size={16} />
                       <span className="text-gray-600">{company.phone}</span>
                     </div>
                   )}
-
                 </div>
               </div>
             </div>
