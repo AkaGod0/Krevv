@@ -392,14 +392,11 @@ export default function MyApplicationsPage() {
   const getServiceUnreadCount = (serviceId: string) =>
     unreadMessages.filter((n) => n.serviceId === serviceId).length;
 
-  const handleChatClick = async (serviceId: string) => {
-    await markAsRead(serviceId);
-  };
+  
 
   const handleNotificationClick = async () => {
     if (unreadMessages.length > 0) {
       const first = unreadMessages[0];
-      await markAsRead(first.serviceId);
       router.push(`/marketplace/chat/${first.serviceId}`);
       setShowMessageAlert(false);
     }
@@ -840,7 +837,7 @@ export default function MyApplicationsPage() {
                       {canChat && (
                         <Link
                           href={`/marketplace/chat/${order.conversationId || `${order.serviceId._id}`}`}
-                          onClick={() => handleChatClick(order.serviceId._id)}
+                          
                           className="relative"
                         >
                           <button className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-semibold text-xs transition shadow-md">
