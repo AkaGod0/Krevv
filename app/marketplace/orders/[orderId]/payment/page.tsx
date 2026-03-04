@@ -25,6 +25,7 @@ interface Order {
   totalAmount: number;
   deliveryTime: number;
   status: string;
+   conversationId?: string;  
   serviceId: { _id: string };
   developerId: {
     firstName: string;
@@ -58,24 +59,29 @@ export default function OrderPaymentPage({
   }, [user, authLoading, orderId]);
 
   const fetchOrderDetails = async () => {
-    try {
-      const res = await api.get(`/marketplace/orders/${orderId}`);
-      const data = res.data;
+  try {
+    const res = await api.get(`/marketplace/orders/${orderId}`);
+    const data = res.data;
 
-      // Already paid — redirect to chat
-      if (data.status !== "pending_payment") {
-        const serviceId = data.serviceId?._id || data.serviceId;
-        router.replace(`/marketplace/chat/${serviceId}`);
-        return;
+    if (data.status !== "pending_payment") {
+      // ✅ Use conversationId if available, otherwise order detail
+      const conversationId = data.conversationId;
+      if (conversationId) {
+        router.replace(`/marketplace/chat/${conversationId}`);
+      } else {
+        router.replace(`/marketplace/orders/${orderId}/confirmation`);
       }
-
-      setOrder(data);
-    } catch (err) {
-      setError("Could not retrieve order details.");
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+
+    setOrder(data);
+  } catch (err) {
+    setError("Could not retrieve order details.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const createPayPalOrder = async () => {
     try {
@@ -91,24 +97,31 @@ export default function OrderPaymentPage({
   };
 
   const onApprove = async (data: { orderID: string }) => {
-    setError("");
-    try {
-      const res = await api.post(
-        `/marketplace/orders/${orderId}/capture-paypal-order`,
-        { paypalOrderId: data.orderID }
-      );
+  setError("");
+  try {
+    const res = await api.post(
+      `/marketplace/orders/${orderId}/capture-paypal-order`,
+      { paypalOrderId: data.orderID }
+    );
 
-      if (res.data.success) {
-        setPaymentSuccess(true);
-        setTimeout(() => {
-          const serviceId = order?.serviceId?._id || (order?.serviceId as any);
-          router.push(`/marketplace/chat/${serviceId}`);
-        }, 3000);
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Payment capture failed. Please try again.");
+ if (res.data.success) {
+  setPaymentSuccess(true);
+  setTimeout(() => {
+    const conversationId = res.data.conversationId;
+    if (conversationId) {
+      router.push(`/marketplace/chat/${conversationId}?paid=true&orderId=${orderId}`);
+    } else {
+      // ✅ Route based on account type
+      const isCompany = user?.role === 'company' || !!(user as any)?.companyName;
+      router.push(isCompany ? '/company/applications' : '/applications');
     }
-  };
+  }, 3000);
+}
+  } catch (err: any) {
+    setError(err.response?.data?.message || "Payment capture failed. Please try again.");
+  }
+};
+  
 
   const onError = (err: any) => {
     console.error("PayPal error:", err);

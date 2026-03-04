@@ -6,19 +6,8 @@ import { useAuth } from "../app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Menu,
-  X,
-  User,
-  LogOut,
-  Briefcase,
-  FileText,
-  Home,
-  ChevronDown,
-  Phone,
-  Info,
-  Building2,
-  LayoutGrid,
-  MessageCircle,
+  Menu, X, User, LogOut, Briefcase, FileText, Home, ChevronDown,
+  Phone, Info, Building2, LayoutGrid, MessageCircle,
 } from "lucide-react";
 import { useNotifications } from "../app/hooks/useNotifications";
 
@@ -28,7 +17,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const { unreadCount, unreadMessages, markAllAsRead } = useNotifications(user?._id);
+  const { unreadCount, markAllAsRead } = useNotifications(user?._id);
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -48,11 +37,8 @@ export default function Navbar() {
     }
   };
 
-  // ✅ Called whenever user navigates to the chat list — clears ALL badges instantly
   const handleOpenChatList = () => {
-    if (unreadCount > 0) {
-      markAllAsRead();
-    }
+    if (unreadCount > 0) markAllAsRead();
   };
 
   const getDisplayName = () => {
@@ -72,9 +58,7 @@ export default function Navbar() {
       <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <div className="bg-amber-500 rounded-lg p-2">
-              <Briefcase className="text-white" size={20} />
-            </div>
+            <div className="bg-amber-500 rounded-lg p-2"><Briefcase className="text-white" size={20} /></div>
             <span className="text-xl font-bold text-gray-800">Krevv</span>
           </Link>
         </div>
@@ -89,15 +73,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
 
-          {/* ── Logo ── */}
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="bg-amber-500 rounded-lg p-2">
-              <Briefcase className="text-white" size={20} />
-            </div>
+            <div className="bg-amber-500 rounded-lg p-2"><Briefcase className="text-white" size={20} /></div>
             <span className="text-lg sm:text-xl font-bold text-gray-800">Krevv</span>
           </Link>
 
-          {/* ── Desktop nav links ── */}
+          {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-6">
             <Link href="/" className="text-gray-700 hover:text-amber-600 font-medium transition flex items-center gap-2">
               <Home size={18} /> Home
@@ -120,11 +102,11 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* ── Desktop right: chat icon + user menu ── */}
+          {/* Desktop right */}
           <div className="hidden lg:flex items-center gap-3">
             {user ? (
               <>
-                {/* ✅ Standalone chat icon with badge — always visible in header */}
+                {/* ✅ Chat icon with live unread badge */}
                 <Link
                   href="/marketplace/chat/chat-list"
                   onClick={handleOpenChatList}
@@ -153,18 +135,14 @@ export default function Navbar() {
                     <div className="bg-amber-500 rounded-full w-8 h-8 flex items-center justify-center text-white font-semibold text-sm">
                       {getInitials()}
                     </div>
-                    <span className="font-medium text-gray-800 max-w-[150px] truncate">
-                      {getDisplayName()}
-                    </span>
+                    <span className="font-medium text-gray-800 max-w-[150px] truncate">{getDisplayName()}</span>
                     <ChevronDown size={16} className={`transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
                   </button>
 
                   <AnimatePresence>
                     {userMenuOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                         className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -172,33 +150,21 @@ export default function Navbar() {
                           <p className="text-sm font-semibold text-gray-800 truncate">{getDisplayName()}</p>
                           <p className="text-xs text-gray-500 truncate">{user.email}</p>
                         </div>
-
-                        <Link
-                          href={isCompany ? "/company/dashboard" : "/profile"}
+                        <Link href={isCompany ? "/company/dashboard" : "/profile"}
                           className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-amber-50 transition"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
+                          onClick={() => setUserMenuOpen(false)}>
                           {isCompany ? <Building2 size={16} /> : <User size={16} />}
                           {isCompany ? "Company Dashboard" : "My Profile"}
                         </Link>
-
-                        <Link
-                          href={isCompany ? "/company/jobs" : "/jobs/my-jobs"}
+                        <Link href={isCompany ? "/company/jobs" : "/jobs/my-jobs"}
                           className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-amber-50 transition"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
+                          onClick={() => setUserMenuOpen(false)}>
                           <Briefcase size={16} /> My Jobs
                         </Link>
-
-                        {/* ✅ My Chats in dropdown — clears ALL unread on click */}
-                        <Link
-                          href="/marketplace/chat/chat-list"
+                        {/* ✅ My Chats with live badge */}
+                        <Link href="/marketplace/chat/chat-list"
                           className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-amber-50 transition"
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            handleOpenChatList();
-                          }}
-                        >
+                          onClick={() => { setUserMenuOpen(false); handleOpenChatList(); }}>
                           <MessageCircle size={16} />
                           My Chats
                           {unreadCount > 0 && (
@@ -207,21 +173,15 @@ export default function Navbar() {
                             </span>
                           )}
                         </Link>
-
                         {!isCompany && (
-                          <Link
-                            href="/applications"
+                          <Link href="/applications"
                             className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-amber-50 transition"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
+                            onClick={() => setUserMenuOpen(false)}>
                             <FileText size={16} /> My Applications
                           </Link>
                         )}
-
-                        <button
-                          onClick={() => { logout(); setUserMenuOpen(false); }}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 text-left transition"
-                        >
+                        <button onClick={() => { logout(); setUserMenuOpen(false); }}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 text-left transition">
                           <LogOut size={16} /> Logout
                         </button>
                       </motion.div>
@@ -244,15 +204,11 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* ── Mobile: chat icon + hamburger ── */}
+          {/* Mobile: chat icon + hamburger */}
           <div className="lg:hidden flex items-center gap-1">
-            {/* ✅ Chat icon always visible on mobile header */}
             {user && (
-              <Link
-                href="/marketplace/chat/chat-list"
-                onClick={handleOpenChatList}
-                className="relative p-2 text-gray-600 hover:text-amber-600 transition"
-              >
+              <Link href="/marketplace/chat/chat-list" onClick={handleOpenChatList}
+                className="relative p-2 text-gray-600 hover:text-amber-600 transition">
                 <MessageCircle size={22} />
                 {unreadCount > 0 && (
                   <motion.span
@@ -277,72 +233,55 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ── Mobile menu ── */}
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
             className="lg:hidden border-t border-gray-200 bg-white"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-4 py-4 space-y-1">
-
               <Link href="/" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                 onClick={() => setMobileMenuOpen(false)}>
                 <Home size={20} /><span className="font-medium">Home</span>
               </Link>
-
               <Link href="/marketplace"
                 className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                 onClick={(e) => { handleMarketplaceClick(e); setMobileMenuOpen(false); }}>
                 <LayoutGrid size={20} /><span className="font-medium">Marketplace</span>
               </Link>
-
               <Link href="/jobs" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                 onClick={() => setMobileMenuOpen(false)}>
                 <Briefcase size={20} /><span className="font-medium">Jobs</span>
               </Link>
-
-              {/* ✅ Chats in mobile menu — also clears unread */}
               {user && (
-                <Link
-                  href="/marketplace/chat/chat-list"
+                <Link href="/marketplace/chat/chat-list"
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
-                  onClick={() => { setMobileMenuOpen(false); handleOpenChatList(); }}
-                >
+                  onClick={() => { setMobileMenuOpen(false); handleOpenChatList(); }}>
                   <MessageCircle size={20} />
                   <span className="font-medium">Chats</span>
                   {unreadCount > 0 && (
-                    <motion.span
-                      key={unreadCount}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1"
-                    >
+                    <motion.span key={unreadCount} initial={{ scale: 0 }} animate={{ scale: 1 }}
+                      className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </motion.span>
                   )}
                 </Link>
               )}
-
               <Link href="/post" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                 onClick={() => setMobileMenuOpen(false)}>
                 <FileText size={20} /><span className="font-medium">Posts</span>
               </Link>
-
               <Link href="/about" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                 onClick={() => setMobileMenuOpen(false)}>
                 <Info size={20} /><span className="font-medium">About</span>
               </Link>
-
               <Link href="/contact" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                 onClick={() => setMobileMenuOpen(false)}>
                 <Phone size={20} /><span className="font-medium">Contact</span>
               </Link>
 
-              {/* ── Mobile user section ── */}
               {user ? (
                 <div className="pt-3 mt-2 border-t border-gray-200 space-y-1">
                   <div className="flex items-center gap-3 px-4 py-2 mb-2">
@@ -354,20 +293,17 @@ export default function Navbar() {
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
                   </div>
-
                   <Link href={isCompany ? "/company/dashboard" : "/profile"}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                     onClick={() => setMobileMenuOpen(false)}>
                     {isCompany ? <Building2 size={20} /> : <User size={20} />}
                     <span className="font-medium">{isCompany ? "Company Dashboard" : "My Profile"}</span>
                   </Link>
-
                   <Link href={isCompany ? "/company/jobs" : "/jobs/my-jobs"}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
                     onClick={() => setMobileMenuOpen(false)}>
                     <Briefcase size={20} /><span className="font-medium">My Jobs</span>
                   </Link>
-
                   {!isCompany && (
                     <Link href="/applications"
                       className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-amber-50 rounded-lg transition"
@@ -375,11 +311,8 @@ export default function Navbar() {
                       <FileText size={20} /><span className="font-medium">My Applications</span>
                     </Link>
                   )}
-
-                  <button
-                    onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition text-left"
-                  >
+                  <button onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition text-left">
                     <LogOut size={20} /><span className="font-medium">Logout</span>
                   </button>
                 </div>
@@ -387,19 +320,13 @@ export default function Navbar() {
                 <div className="pt-3 mt-2 border-t border-gray-200 space-y-2">
                   <Link href="/company/login"
                     className="block px-4 py-3 text-center text-gray-700 hover:bg-amber-50 rounded-lg font-medium transition"
-                    onClick={() => setMobileMenuOpen(false)}>
-                    Company Login
-                  </Link>
+                    onClick={() => setMobileMenuOpen(false)}>Company Login</Link>
                   <Link href="/login"
                     className="block px-4 py-3 text-center text-amber-600 hover:bg-amber-50 rounded-lg font-semibold transition"
-                    onClick={() => setMobileMenuOpen(false)}>
-                    Log In
-                  </Link>
+                    onClick={() => setMobileMenuOpen(false)}>Log In</Link>
                   <Link href="/signup"
                     className="block px-4 py-3 text-center bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg shadow transition"
-                    onClick={() => setMobileMenuOpen(false)}>
-                    Sign Up
-                  </Link>
+                    onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
                 </div>
               )}
             </div>

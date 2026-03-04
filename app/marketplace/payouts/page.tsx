@@ -338,10 +338,7 @@ export default function MyPayoutRequestsPage() {
 
                   {/* Actions */}
                   <div className="flex lg:flex-col gap-2 lg:min-w-[140px]">
-                    <Link
-                      href={`/marketplace/chat/${request.orderId.serviceId._id}`}
-                      className="flex-1"
-                    >
+                 <Link href={`/marketplace/chat/${(request.orderId as any).conversationId || request.orderId.serviceId._id}`} className="flex-1">
                       <button className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition text-sm flex items-center justify-center gap-1.5">
                         <Eye size={16} />
                         View Chat

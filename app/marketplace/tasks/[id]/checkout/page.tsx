@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, Suspense } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api, useAuth } from "@/app/context/AuthContext";
 import {
   ArrowLeft,
@@ -18,32 +18,35 @@ import {
   Sparkles,
   Info,
   Lock,
+  MessageCircle,
 } from "lucide-react";
 
-interface Service {
+interface ServiceData {
   _id: string;
   title: string;
   description: string;
   budget: number;
   deliveryTime: number;
-  category: string;
+  category?: string;
   features?: string[];
-  // ✅ clientId here is the SERVICE OWNER (developer/seller)
-  // We no longer need their paypalEmail — payment goes to platform
   clientId: {
     _id: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     companyName?: string;
   };
+  _isOrder?: boolean;
 }
 
-export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+function CheckoutContent({ id }: { id: string }) {
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  const [service, setService] = useState<Service | null>(null);
+  // ✅ source=chat means id is an orderId, otherwise id is a serviceId
+  const source = searchParams.get("source");
+
+  const [service, setService] = useState<ServiceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [error, setError] = useState("");
@@ -53,16 +56,42 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       router.push("/login");
       return;
     }
-    if (user) fetchService();
-  }, [user, authLoading, id]);
+    if (user) {
+      if (source === "chat") {
+        fetchOrderAsService(id); // ✅ id is orderId
+      } else {
+        fetchService(id);        // ✅ id is serviceId (normal flow)
+      }
+    }
+  }, [user, authLoading, id, source]);
 
-  const fetchService = async () => {
+  // ✅ Chat order flow — load existing CustomOrder and map to ServiceData shape
+  const fetchOrderAsService = async (orderId: string) => {
     try {
-      const res = await api.get(`/marketplace/services/${id}`);
-      setService(res.data);
+      const res = await api.get(`/marketplace/orders/${orderId}`);
+      const ord = res.data;
+      setService({
+        _id: ord._id,
+        title: ord.title,
+        description: ord.description,
+        budget: ord.price,
+        deliveryTime: ord.deliveryTime,
+        clientId: ord.developerId, // developer is the seller
+        _isOrder: true,
+      });
+    } catch (err: any) {
+      console.error("Error fetching order:", err);
+      setError("Failed to load order details. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // ✅ Only check the service exists — no PayPal email check needed
-      // Payment goes to YOUR platform account, not directly to developer
+  // ✅ Normal flow — load ServiceTask
+  const fetchService = async (serviceId: string) => {
+    try {
+      const res = await api.get(`/marketplace/services/${serviceId}`);
+      setService(res.data);
       if (!res.data.clientId) {
         setError("Service information is incomplete. Please contact support.");
       }
@@ -76,34 +105,41 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
   const handleProceedToPayment = async () => {
     if (!service) return;
-
     setProcessingPayment(true);
     setError("");
 
     try {
-      // ✅ Step 1: Create order — payment will go to YOUR platform PayPal account
-      const orderRes = await api.post(`/marketplace/services/${id}/orders`, {
-        title: service.title,
-        description: service.description,
-        price: service.budget,
-        deliveryTime: parseInt(service.deliveryTime.toString(), 10),
-      });
-
-      const orderId = orderRes.data.order._id;
-
-      // ✅ Step 2: Redirect to payment page (PayPal captures to YOUR account)
-      router.push(`/marketplace/orders/${orderId}/payment`);
+      if (service._isOrder) {
+        // ✅ Chat order — already exists in DB, go straight to payment
+        router.push(`/marketplace/orders/${id}/payment`);
+      } else {
+        // ✅ Normal flow — create order first then go to payment
+        const orderRes = await api.post(`/marketplace/services/${id}/orders`, {
+          title: service.title,
+          description: service.description,
+          price: service.budget,
+          deliveryTime: parseInt(service.deliveryTime.toString(), 10),
+        });
+        const newOrderId = orderRes.data.order._id;
+        router.push(`/marketplace/orders/${newOrderId}/payment`);
+      }
     } catch (err: any) {
-      console.error("Error creating order:", err);
-      setError(err.response?.data?.message || "Failed to create order. Please try again.");
+      console.error("Error proceeding to payment:", err);
+      setError(
+        err.response?.data?.message || "Failed to create order. Please try again."
+      );
       setProcessingPayment(false);
     }
   };
 
-  const sellerName = (s: Service) =>
-    s.clientId?.companyName ||
-    `${s.clientId?.firstName || ""} ${s.clientId?.lastName || ""}`.trim() ||
-    "Developer";
+  const sellerName = (s: ServiceData) => {
+    const c = s.clientId;
+    return (
+      c?.companyName ||
+      `${c?.firstName || ""} ${c?.lastName || ""}`.trim() ||
+      "Developer"
+    );
+  };
 
   if (authLoading || loading) {
     return (
@@ -121,9 +157,16 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-4">
         <div className="text-center max-w-md">
           <Package className="w-16 h-16 text-red-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Service Not Found</h2>
-          <p className="text-gray-600 mb-6">This service may have been removed.</p>
-          <button onClick={() => router.push("/marketplace")} className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {source === "chat" ? "Order Not Found" : "Service Not Found"}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {error || "This item may have been removed."}
+          </p>
+          <button
+            onClick={() => router.push("/marketplace")}
+            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700"
+          >
             Back to Marketplace
           </button>
         </div>
@@ -139,7 +182,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold transition-colors">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold transition-colors"
+          >
             <ArrowLeft size={20} /> Back
           </button>
         </div>
@@ -156,10 +202,20 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
             ].map((step, i, arr) => (
               <div key={step.n} className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${step.active ? "bg-blue-600" : "bg-gray-300"}`}>
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                      step.active ? "bg-blue-600" : "bg-gray-300"
+                    }`}
+                  >
                     {step.n}
                   </div>
-                  <span className={`font-semibold ${step.active ? "text-gray-900" : "text-gray-400"}`}>{step.label}</span>
+                  <span
+                    className={`font-semibold ${
+                      step.active ? "text-gray-900" : "text-gray-400"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
                 </div>
                 {i < arr.length - 1 && <div className="w-12 h-1 bg-gray-300" />}
               </div>
@@ -167,24 +223,51 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
           </div>
         </div>
 
+        {/* ✅ Chat order banner */}
+        {service._isOrder && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-purple-50 border-2 border-purple-200 rounded-2xl flex items-center gap-3"
+          >
+            <MessageCircle className="w-5 h-5 text-purple-600 flex-shrink-0" />
+            <p className="text-sm font-semibold text-purple-800">
+              This is a custom order from your chat. Review the details below
+              and proceed to payment.
+            </p>
+          </motion.div>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* ── Left: Order Summary ── */}
           <div className="lg:col-span-2 space-y-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-3xl p-8 shadow-xl border-2 border-gray-100">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-3xl p-8 shadow-xl border-2 border-gray-100"
+            >
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                   <ShoppingCart className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900">Order Summary</h2>
-                  <p className="text-sm text-gray-500">Review your purchase details</p>
+                  <h2 className="text-2xl font-black text-gray-900">
+                    Order Summary
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Review your purchase details
+                  </p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{service.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">{service.description}</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
+                    {service.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                    {service.description}
+                  </p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
@@ -194,7 +277,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Service Price</p>
-                      <p className="font-bold text-gray-900">${service.budget}</p>
+                      <p className="font-bold text-gray-900">
+                        ${service.budget}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -203,19 +288,25 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Delivery Time</p>
-                      <p className="font-bold text-gray-900">{service.deliveryTime} Days</p>
+                      <p className="font-bold text-gray-900">
+                        {service.deliveryTime} Days
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {service.features && service.features.length > 0 && (
                   <div className="pt-4 border-t border-gray-200">
-                    <h4 className="font-bold text-gray-900 mb-3">What's Included</h4>
+                    <h4 className="font-bold text-gray-900 mb-3">
+                      What's Included
+                    </h4>
                     <div className="space-y-2">
                       {service.features.slice(0, 5).map((feature, i) => (
                         <div key={i} className="flex items-start gap-2">
                           <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-gray-700">{feature}</span>
+                          <span className="text-sm text-gray-700">
+                            {feature}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -231,15 +322,24 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                     {sellerName(service)[0] || "?"}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">{sellerName(service)}</p>
-                    <p className="text-sm text-gray-500">Professional Developer</p>
+                    <p className="font-bold text-gray-900">
+                      {sellerName(service)}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Professional Developer
+                    </p>
                   </div>
                 </div>
               </div>
             </motion.div>
 
             {/* How It Works */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-blue-50 rounded-2xl p-6 border border-blue-200"
+            >
               <div className="flex items-center gap-2 mb-4">
                 <Info className="w-5 h-5 text-blue-600" />
                 <h3 className="font-bold text-gray-900">How It Works</h3>
@@ -262,16 +362,24 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               </div>
             </motion.div>
 
-            {/* ✅ Escrow notice — reassures client money goes to platform first */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-green-50 rounded-2xl p-5 border-2 border-green-200">
+            {/* Escrow notice */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-green-50 rounded-2xl p-5 border-2 border-green-200"
+            >
               <div className="flex items-start gap-3">
                 <Lock className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-green-800 mb-1">Escrow Protection</p>
+                  <p className="font-bold text-green-800 mb-1">
+                    Escrow Protection
+                  </p>
                   <p className="text-sm text-green-700 leading-relaxed">
-                    Your payment goes directly to our secure platform account — <strong>not</strong> to the developer.
-                    Funds are only released to the developer after you approve the completed work.
-                    If the work isn't delivered, you're covered.
+                    Your payment goes directly to our secure platform account —{" "}
+                    <strong>not</strong> to the developer. Funds are only
+                    released to the developer after you approve the completed
+                    work. If the work isn't delivered, you're covered.
                   </p>
                 </div>
               </div>
@@ -280,45 +388,64 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
           {/* ── Right: Payment Sidebar ── */}
           <div className="lg:col-span-1">
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-3xl p-8 shadow-2xl border-2 border-gray-100 sticky top-4">
-              <h3 className="text-xl font-black text-gray-900 mb-6">Payment Summary</h3>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white rounded-3xl p-8 shadow-2xl border-2 border-gray-100 sticky top-4"
+            >
+              <h3 className="text-xl font-black text-gray-900 mb-6">
+                Payment Summary
+              </h3>
 
               <div className="space-y-4 mb-6">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Service Price</span>
-                  <span className="font-bold text-gray-900">${service.budget.toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">
+                    ${service.budget.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Platform Fee (5%)</span>
-                  <span className="font-bold text-gray-900">${platformFee.toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">
+                    ${platformFee.toFixed(2)}
+                  </span>
                 </div>
                 <div className="pt-4 border-t-2 border-gray-200 flex items-center justify-between">
                   <span className="text-lg font-bold text-gray-900">Total</span>
                   <div className="text-right">
                     <div className="flex items-center gap-1">
                       <DollarSign className="w-6 h-6 text-green-600" />
-                      <span className="text-3xl font-black text-gray-900">{totalAmount.toFixed(2)}</span>
+                      <span className="text-3xl font-black text-gray-900">
+                        {totalAmount.toFixed(2)}
+                      </span>
                     </div>
-                    {/* ✅ Updated copy — reflects escrow model */}
-                    <p className="text-xs text-gray-400 mt-1">Held in escrow until delivery approved</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Held in escrow until delivery approved
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* ✅ Where money goes — transparent breakdown */}
+              {/* Where money goes */}
               <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
-                <p className="font-black text-slate-600 uppercase text-[10px] mb-2">Where your money goes</p>
+                <p className="font-black text-slate-600 uppercase text-[10px] mb-2">
+                  Where your money goes
+                </p>
                 <div className="flex justify-between text-slate-600">
                   <span>→ Platform escrow</span>
                   <span className="font-bold">${totalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>→ Released to developer (after approval)</span>
-                  <span className="font-semibold">${service.budget.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    ${service.budget.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>→ Platform fee retained</span>
-                  <span className="font-semibold">${platformFee.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    ${platformFee.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
@@ -335,9 +462,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-black rounded-2xl shadow-xl transition-all disabled:cursor-not-allowed mb-4"
               >
                 {processingPayment ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</>
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Processing...
+                  </>
                 ) : (
-                  <><CreditCard className="w-5 h-5" /> Proceed to Payment</>
+                  <>
+                    <CreditCard className="w-5 h-5" /> Proceed to Payment
+                  </>
                 )}
               </button>
 
@@ -360,7 +491,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                 <p className="text-xs text-gray-400 mb-3">Secure payment via</p>
                 <div className="flex items-center justify-center">
                   <div className="px-4 py-2 bg-blue-50 rounded-lg">
-                    <span className="text-sm font-bold text-blue-700">PayPal</span>
+                    <span className="text-sm font-bold text-blue-700">
+                      PayPal
+                    </span>
                   </div>
                 </div>
                 <p className="text-[10px] text-gray-400 mt-3 uppercase tracking-widest font-bold">
@@ -372,5 +505,26 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         </div>
       </div>
     </div>
+  );
+}
+
+// ✅ Outer component reads [id] param and passes to inner content
+export default function CheckoutPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        </div>
+      }
+    >
+      <CheckoutContent id={id} />
+    </Suspense>
   );
 }

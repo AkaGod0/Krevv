@@ -1,15 +1,39 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/app/context/AuthContext';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
+
+interface NotificationItem {
+  serviceId: string;
+  participantId: string;
+  message: string;
+  recipientId: string;
+}
 
 export function useNotifications(userId: string | undefined) {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
-  const socketRef = useRef<Socket | null>(null);
+  const [unreadMessages, setUnreadMessages] = useState<NotificationItem[]>([]);
+  const [chatMessages, setChatMessages] = useState<NotificationItem[]>([]);
 
-  // Keep a ref of unreadMessages so callbacks can access latest without stale closure
   const unreadMessagesRef = useRef<any[]>([]);
   unreadMessagesRef.current = unreadMessages;
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications/unread/count');
+      setUnreadCount(res.data.count);
+    } catch (err) {
+      console.error('Error fetching unread count:', err);
+    }
+  }, []);
+
+  const fetchUnreadMessages = useCallback(async () => {
+    try {
+      const res = await api.get('/notifications/unread');
+      setUnreadMessages(res.data);
+    } catch (err) {
+      console.error('Error fetching unread messages:', err);
+    }
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -18,124 +42,131 @@ export function useNotifications(userId: string | undefined) {
     fetchUnreadMessages();
 
     const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const socket = io(`${SOCKET_URL}/marketplace-chat`, {
+
+    // ── /chat namespace ────────────────────────────────────────────────────
+    // Join the personal user room so backend can push to this user from anywhere
+    const chatSocket = io(`${SOCKET_URL}/chat`, {
       transports: ['polling', 'websocket'],
       reconnection: true,
     });
 
-    socket.on('connect', () => {
-      console.log('Notifications socket connected');
+    chatSocket.on('connect', () => {
+      // ✅ Tell the backend "I am userId" — gateway puts us in room `user_${userId}`
+      chatSocket.emit('joinUserRoom', { userId });
     });
 
-    // When a new message arrives for this user, refresh from server
-    socket.on('newNotification', (data: any) => {
+    // ✅ Fires when backend calls gateway.notifyRecipient(recipientId, ...)
+    chatSocket.on('newNotification', (data: any) => {
       if (data.recipientId === userId) {
         fetchUnreadCount();
         fetchUnreadMessages();
       }
     });
 
-    socket.on('newMessage', (data: any) => {
+    chatSocket.on('newMessage', (data: any) => {
+      if (data.recipientId === userId || data.participantId === userId) {
+        fetchUnreadCount();
+        fetchUnreadMessages();
+      }
+    });
+
+    // ── /marketplace-chat namespace (backward compat) ──────────────────────
+    const marketplaceSocket = io(`${SOCKET_URL}/marketplace-chat`, {
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+    });
+
+    marketplaceSocket.on('newNotification', (data: any) => {
       if (data.recipientId === userId) {
         fetchUnreadCount();
         fetchUnreadMessages();
       }
     });
 
-    socketRef.current = socket;
+    marketplaceSocket.on('newMessage', (data: any) => {
+      if (data.recipientId === userId || data.participantId === userId) {
+        setChatMessages((prev) => [...prev, data]);
+        fetchUnreadCount();
+        fetchUnreadMessages();
+      }
+    });
 
     return () => {
-      socket.disconnect();
+      chatSocket.disconnect();
+      marketplaceSocket.disconnect();
     };
   }, [userId]);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/unread/count');
-      setUnreadCount(res.data.count);
-    } catch (err) {
-      console.error('Error fetching unread count:', err);
-    }
-  };
+  const markAsRead = useCallback(
+    async (serviceId: string, participantId: string) => {
+      const current = unreadMessagesRef.current;
+      const removedCount = current.filter(
+        (m) => m.serviceId === serviceId && m.participantId === participantId
+      ).length;
 
-  const fetchUnreadMessages = async () => {
-    try {
-      const res = await api.get('/notifications/unread');
-      setUnreadMessages(res.data);
-    } catch (err) {
-      console.error('Error fetching unread messages:', err);
-    }
-  };
+      setUnreadMessages((prev) =>
+        prev.filter((m) => !(m.serviceId === serviceId && m.participantId === participantId))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - removedCount));
 
-  // ── markAsRead ─────────────────────────────────────────────────────────────
-  // 1. Optimistically remove matching messages from local state RIGHT AWAY
-  //    so the badge clears instantly without waiting for the API round-trip
-  // 2. Then call the server to persist the read state
-  // 3. Re-fetch afterwards to ensure sync
-  const markAsRead = useCallback(async (serviceId: string) => {
-    // Step 1 — optimistic: clear this serviceId from local state immediately
-    const current = unreadMessagesRef.current;
-    const removedCount = current.filter((m) => m.serviceId === serviceId).length;
+      try {
+        await api.post(`/notifications/mark-read/${serviceId}/${participantId}`);
+      } catch (err) {
+        console.error('Error marking as read:', err);
+      }
 
-    setUnreadMessages((prev) => prev.filter((m) => m.serviceId !== serviceId));
-    setUnreadCount((prev) => Math.max(0, prev - removedCount));
+      await fetchUnreadCount();
+      await fetchUnreadMessages();
+    },
+    [fetchUnreadCount, fetchUnreadMessages]
+  );
 
-    // Step 2 — persist to server
-    try {
-      await api.post(`/notifications/mark-read/${serviceId}`);
-    } catch (err) {
-      console.error('Error marking as read:', err);
-    }
-
-    // Step 3 — sync with real server state
-    await fetchUnreadCount();
-    await fetchUnreadMessages();
-  }, []);
-
-  // ── markAllAsRead ──────────────────────────────────────────────────────────
-  // Clears everything at once — used when opening the chat list page
   const markAllAsRead = useCallback(async () => {
-    // Optimistic clear immediately
     setUnreadCount(0);
     setUnreadMessages([]);
-
     try {
       await api.post('/notifications/mark-all-read');
     } catch (err) {
       console.error('Error marking all as read:', err);
-      // On failure re-fetch so UI reflects truth
       await fetchUnreadCount();
       await fetchUnreadMessages();
     }
-  }, []);
+  }, [fetchUnreadCount, fetchUnreadMessages]);
 
-  // ── markMultipleAsRead ─────────────────────────────────────────────────────
-  // Clears several serviceIds at once — used for grouped client chats
-  const markMultipleAsRead = useCallback(async (serviceIds: string[]) => {
-    if (!serviceIds.length) return;
+  const markMultipleAsRead = useCallback(
+    async (threads: { serviceId: string; participantId: string }[]) => {
+      if (!threads.length) return;
 
-    // Optimistic clear
-    const current = unreadMessagesRef.current;
-    const removedCount = current.filter((m) => serviceIds.includes(m.serviceId)).length;
+      const current = unreadMessagesRef.current;
+      const removedCount = current.filter((m) =>
+        threads.some((t) => t.serviceId === m.serviceId && t.participantId === m.participantId)
+      ).length;
 
-    setUnreadMessages((prev) => prev.filter((m) => !serviceIds.includes(m.serviceId)));
-    setUnreadCount((prev) => Math.max(0, prev - removedCount));
+      setUnreadMessages((prev) =>
+        prev.filter((m) => !threads.some(
+          (t) => t.serviceId === m.serviceId && t.participantId === m.participantId
+        ))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - removedCount));
 
-    // Persist each to server in parallel
-    try {
-      await Promise.all(serviceIds.map((id) => api.post(`/notifications/mark-read/${id}`)));
-    } catch (err) {
-      console.error('Error marking multiple as read:', err);
-    }
+      try {
+        await Promise.all(
+          threads.map((t) => api.post(`/notifications/mark-read/${t.serviceId}/${t.participantId}`))
+        );
+      } catch (err) {
+        console.error('Error marking multiple as read:', err);
+      }
 
-    // Sync
-    await fetchUnreadCount();
-    await fetchUnreadMessages();
-  }, []);
+      await fetchUnreadCount();
+      await fetchUnreadMessages();
+    },
+    [fetchUnreadCount, fetchUnreadMessages]
+  );
 
   return {
     unreadCount,
     unreadMessages,
+    chatMessages,
     markAsRead,
     markAllAsRead,
     markMultipleAsRead,

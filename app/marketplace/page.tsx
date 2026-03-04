@@ -14,8 +14,11 @@ import {
   ShoppingCart,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 
 interface Service {
   _id: string;
@@ -41,12 +44,14 @@ interface Service {
 
 export default function Marketplace() {
   const [services, setServices] = useState<Service[]>([]);
+  const router = useRouter(); 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const servicesPerPage = 10;
   const { user } = useAuth();
+  const [startingChat, setStartingChat] = useState<string | null>(null);
 
   const categories = [
     { id: "all", name: "All Services", icon: Sparkles },
@@ -98,6 +103,23 @@ export default function Marketplace() {
     };
     return colors[category] || colors.other;
   };
+
+
+ const handleChatClick = async (serviceId: string, developerId: string) => {
+  if (!user) { router.push('/login'); return; }
+  setStartingChat(serviceId);
+  try {
+    const res = await api.post('/chat/conversations/start', {
+      developerId,
+      serviceId,
+    });
+    router.push(`/marketplace/chat/${res.data._id}`);
+  } catch (err) {
+    console.error('Failed to start conversation:', err);
+  } finally {
+    setStartingChat(null);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
@@ -212,12 +234,20 @@ export default function Marketplace() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Link href={`/marketplace/chat/${service._id}`}>
-                        <button className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition-all">
-                          <MessageCircle size={14} />
+                    
+                      {user?._id !== service.clientId?._id && (
+                        <button
+                          onClick={() => handleChatClick(service._id, service.clientId._id)}
+                          disabled={startingChat === service._id}
+                          className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-bold rounded-xl text-xs transition-all"
+                        >
+                          {startingChat === service._id 
+                            ? <Loader2 size={14} className="animate-spin" /> 
+                            : <MessageCircle size={14} />
+                          }
                           Chat
                         </button>
-                      </Link>
+                      )}
                       <Link href={`/marketplace/tasks/${service._id}`}>
                         <button className="flex items-center gap-1 px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition-all">
                           <ShoppingCart size={14} />

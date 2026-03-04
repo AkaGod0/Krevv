@@ -62,6 +62,7 @@ interface Order {
     | "delivered"
     | "completed"
     | "cancelled";
+    conversationId: string;
   serviceId: {
     _id: string;
     title: string;
@@ -391,18 +392,32 @@ export default function MyApplicationsPage() {
   const getServiceUnreadCount = (serviceId: string) =>
     unreadMessages.filter((n) => n.serviceId === serviceId).length;
 
-  const handleChatClick = async (serviceId: string) => {
-    await markAsRead(serviceId);
-  };
+  
 
   const handleNotificationClick = async () => {
     if (unreadMessages.length > 0) {
       const first = unreadMessages[0];
-      await markAsRead(first.serviceId);
       router.push(`/marketplace/chat/${first.serviceId}`);
       setShowMessageAlert(false);
     }
   };
+
+
+  const handleOpenChat = async (serviceId: string, developerId: string) => {
+  try {
+    // Start or get conversation
+    const res = await api.post('/chat/conversations/start', {
+      developerId: developerId,
+      serviceId: serviceId,
+    });
+    
+    // Navigate to conversation
+    router.push(`/marketplace/chat/${res.data._id}`);
+  } catch (err) {
+    console.error('Error starting chat:', err);
+    alert('Failed to open chat');
+  }
+};
 
   const getJobStatusColor = (status: string) =>
     ({
@@ -504,21 +519,7 @@ export default function MyApplicationsPage() {
           </div>
 
           {/* Bell */}
-          <button
-            onClick={handleNotificationClick}
-            className="relative flex-shrink-0 p-2 sm:p-2.5 bg-white hover:bg-amber-50 rounded-xl transition-colors shadow-sm border border-gray-100"
-          >
-            <Bell size={18} className="text-gray-600" />
-            {unreadCount > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center"
-              >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </motion.span>
-            )}
-          </button>
+         
         </motion.div>
 
         {/* ── Job Application Stats ── */}
@@ -821,8 +822,8 @@ export default function MyApplicationsPage() {
                       {/* Chat */}
                       {canChat && (
                         <Link
-                          href={`/marketplace/services/${order.serviceId._id}/chat`}
-                          onClick={() => handleChatClick(order.serviceId._id)}
+                          href={`/marketplace/chat/${order.conversationId || `${order.serviceId._id}`}`}
+                          
                           className="relative"
                         >
                           <button className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-semibold text-xs transition shadow-md">

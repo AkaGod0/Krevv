@@ -115,7 +115,6 @@ export default function CompanyDashboardPage() {
   const handleNotificationClick = async () => {
     if (unreadMessages.length > 0) {
       const firstMessage = unreadMessages[0];
-      await markAsRead(firstMessage.serviceId);
       router.push(`/marketplace/chat/${firstMessage.serviceId}`);
       setShowMessageAlert(false);
     }
@@ -254,18 +253,6 @@ export default function CompanyDashboardPage() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Notification Bell */}
-            <button onClick={handleNotificationClick} className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell size={20} className="text-gray-600" />
-              {unreadCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
-                >
-                  {unreadCount}
-                </motion.span>
-              )}
-            </button>
 
             <Link
               href="/company/createservice"

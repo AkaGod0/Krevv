@@ -26,6 +26,7 @@ export default function ServiceDetailPage() {
   const [developerProfile, setDeveloperProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [providerType, setProviderType] = useState<"user" | "company">("user");
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     fetchServiceDetails();
@@ -81,6 +82,22 @@ export default function ServiceDetailPage() {
       setLoading(false);
     }
   };
+
+  const handleChatClick = async (serviceId: string, developerId: string) => {
+  if (!user) { router.push('/login'); return; }
+  setStartingChat(true);
+  try {
+    const res = await api.post('/chat/conversations/start', {
+      developerId,
+      serviceId,
+    });
+    router.push(`/marketplace/chat/${res.data._id}`);
+  } catch (err) {
+    console.error('Failed to start conversation:', err);
+  } finally {
+    setStartingChat(false);
+  }
+};
 
   if (loading) {
     return (
@@ -310,12 +327,20 @@ export default function ServiceDetailPage() {
                       Buy Now
                     </button>
                   </Link>
-                  <Link href={`/marketplace/chat/${id}`}>
-                    <button className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition-all">
-                      <MessageCircle size={20} />
+                
+                  {user?._id !== service?.clientId?._id && (
+                    <button
+                      onClick={() => handleChatClick(service._id, service.clientId._id)}
+                      disabled={startingChat}
+                      className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-bold rounded-2xl transition-all"
+                    >
+                      {startingChat
+                        ? <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                        : <MessageCircle size={20} />
+                      }
                       Chat with Provider
                     </button>
-                  </Link>
+                  )}
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
