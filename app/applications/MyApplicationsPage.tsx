@@ -62,6 +62,7 @@ interface Order {
     | "delivered"
     | "completed"
     | "cancelled";
+    conversationId: string;
   serviceId: {
     _id: string;
     title: string;
@@ -403,6 +404,23 @@ export default function MyApplicationsPage() {
       setShowMessageAlert(false);
     }
   };
+
+
+  const handleOpenChat = async (serviceId: string, developerId: string) => {
+  try {
+    // Start or get conversation
+    const res = await api.post('/chat/conversations/start', {
+      developerId: developerId,
+      serviceId: serviceId,
+    });
+    
+    // Navigate to conversation
+    router.push(`/marketplace/chat/${res.data._id}`);
+  } catch (err) {
+    console.error('Error starting chat:', err);
+    alert('Failed to open chat');
+  }
+};
 
   const getJobStatusColor = (status: string) =>
     ({
@@ -821,7 +839,7 @@ export default function MyApplicationsPage() {
                       {/* Chat */}
                       {canChat && (
                         <Link
-                          href={`/marketplace/services/${order.serviceId._id}/chat`}
+                          href={`/marketplace/chat/${order.conversationId || `${order.serviceId._id}`}`}
                           onClick={() => handleChatClick(order.serviceId._id)}
                           className="relative"
                         >

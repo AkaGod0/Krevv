@@ -77,6 +77,7 @@ interface Order {
   totalAmount: number;
   deliveryTime: number;
   status: "pending_payment" | "paid" | "in_progress" | "delivered" | "completed";
+  conversationId?: string;
   serviceId: {
     _id: string;
     title: string;
@@ -273,6 +274,26 @@ export default function CompanyApplicationsPage() {
       setAcceptingDelivery(false);
     }
   };
+
+
+
+  
+const handleOpenChat = async (serviceId: string, developerId: string) => {
+  try {
+    // Start or get conversation
+    const res = await api.post('/chat/conversations/start', {
+      developerId: developerId,
+      serviceId: serviceId,
+    });
+    
+    // Navigate to conversation
+    router.push(`/marketplace/chat/${res.data._id}`);
+  } catch (err) {
+    console.error('Error starting chat:', err);
+    alert('Failed to open chat');
+  }
+};
+
 
   const filteredApplications = applications.filter((app) => {
     const applicantData = app.user || app.developerId;
@@ -590,7 +611,7 @@ export default function CompanyApplicationsPage() {
                     <div className="flex flex-wrap gap-2">
                       {canChat && (
                         <Link
-                          href={`/marketplace/chat/${order.serviceId._id}`}
+                        href={`/marketplace/chat/${order.conversationId || `${order.serviceId._id}`}`}
                           className="flex-1 min-w-[120px]"
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -809,13 +830,13 @@ export default function CompanyApplicationsPage() {
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link
-                    href={`/marketplace/chat/${selectedOrder.serviceId._id}`}
+                   href={`/marketplace/chat/${(selectedOrder as any).conversationId || selectedOrder.serviceId}`}
                     className="flex-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button className="w-full py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-black rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base">
                       <MessageCircle size={18} />
-                      Open Chat
+                      vie Chat
                     </button>
                   </Link>
 

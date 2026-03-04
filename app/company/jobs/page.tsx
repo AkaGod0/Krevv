@@ -28,6 +28,7 @@ import {
   ShoppingBag,
   Zap,
   Sparkles,
+  Package,
 } from "lucide-react";
 
 interface Job {
@@ -292,7 +293,7 @@ export default function CompanyJobsPage() {
                               Post a Job
                             </button>
                           </Link>
-                          <Link href="/company/create-service">
+                          <Link href="/company/createservice">
                             <button className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition shadow-lg">
                               Create Service
                             </button>
@@ -302,6 +303,13 @@ export default function CompanyJobsPage() {
                               View Payouts
                             </button>
                           </Link>
+                           <Link href="/marketplace/developer-orders" className="flex-1 sm:flex-initial">
+                                         <button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg">
+                                           <Package size={20} />
+                                           My Orders
+                                         </button>
+                            </Link>
+
                         </div>
           </div>
         </div>
