@@ -3,22 +3,11 @@ import { useEffect, useState } from "react";
 import { api, useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 import {
-  Briefcase,
-  DollarSign,
-  Search,
-  Clock,
-  Sparkles,
-  TrendingUp,
-  Users,
-  MessageCircle,
-  ShoppingCart,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
+  Briefcase, DollarSign, Search, Clock, Sparkles, TrendingUp, Users,
+  MessageCircle, ShoppingCart, ChevronLeft, ChevronRight, Loader2, Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
 
 interface Service {
   _id: string;
@@ -32,19 +21,14 @@ interface Service {
   requiredSkills: string[];
   deliveryTime?: number;
   features?: string[];
-  clientId: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    companyName?: string;
-  };
+  clientId: { _id: string; firstName: string; lastName: string; companyName?: string; };
   clientType?: string;
   clientModel?: 'User' | 'Company';
 }
 
 export default function Marketplace() {
   const [services, setServices] = useState<Service[]>([]);
-  const router = useRouter(); 
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -54,18 +38,16 @@ export default function Marketplace() {
   const [startingChat, setStartingChat] = useState<string | null>(null);
 
   const categories = [
-    { id: "all", name: "All Services", icon: Sparkles },
-    { id: "bug_fix", name: "Bug Fixes", icon: Briefcase },
-    { id: "feature_development", name: "Features", icon: TrendingUp },
-    { id: "code_review", name: "Code Review", icon: Users },
-    { id: "consulting", name: "Consulting", icon: Briefcase },
-    { id: "design", name: "Design", icon: Sparkles },
-    { id: "other", name: "Other", icon: Briefcase },
+    { id: "all",                  name: "All Services", icon: Sparkles },
+    { id: "bug_fix",              name: "Bug Fixes",    icon: Briefcase },
+    { id: "feature_development",  name: "Features",     icon: TrendingUp },
+    { id: "code_review",          name: "Code Review",  icon: Users },
+    { id: "consulting",           name: "Consulting",   icon: Briefcase },
+    { id: "design",               name: "Design",       icon: Sparkles },
+    { id: "other",                name: "Other",        icon: Briefcase },
   ];
 
-  useEffect(() => {
-    fetchServices();
-  }, [user]);
+  useEffect(() => { fetchServices(); }, [user]);
 
   const fetchServices = async () => {
     try {
@@ -82,48 +64,43 @@ export default function Marketplace() {
     const matchesSearch =
       service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || service.category === selectedCategory;
+    const matchesCategory = selectedCategory === "all" || service.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const indexOfLastService = currentPage * servicesPerPage;
+  const indexOfLastService  = currentPage * servicesPerPage;
   const indexOfFirstService = indexOfLastService - servicesPerPage;
-  const currentServices = filteredServices.slice(indexOfFirstService, indexOfLastService);
-  const totalPages = Math.ceil(filteredServices.length / servicesPerPage);
+  const currentServices     = filteredServices.slice(indexOfFirstService, indexOfLastService);
+  const totalPages          = Math.ceil(filteredServices.length / servicesPerPage);
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      bug_fix: "bg-red-50 text-red-600 border-red-100",
-      feature_development: "bg-blue-50 text-blue-600 border-blue-100",
-      code_review: "bg-purple-50 text-purple-600 border-purple-100",
-      consulting: "bg-green-50 text-green-600 border-green-100",
-      design: "bg-pink-50 text-pink-600 border-pink-100",
-      other: "bg-gray-50 text-gray-600 border-gray-100",
+      bug_fix:              "bg-red-50 text-red-600 border-red-100",
+      feature_development:  "bg-blue-50 text-blue-600 border-blue-100",
+      code_review:          "bg-purple-50 text-purple-600 border-purple-100",
+      consulting:           "bg-green-50 text-green-600 border-green-100",
+      design:               "bg-pink-50 text-pink-600 border-pink-100",
+      other:                "bg-gray-50 text-gray-600 border-gray-100",
     };
     return colors[category] || colors.other;
   };
 
-
- const handleChatClick = async (serviceId: string, developerId: string) => {
-  if (!user) { router.push('/login'); return; }
-  setStartingChat(serviceId);
-  try {
-    const res = await api.post('/chat/conversations/start', {
-      developerId,
-      serviceId,
-    });
-    router.push(`/marketplace/chat/${res.data._id}`);
-  } catch (err) {
-    console.error('Failed to start conversation:', err);
-  } finally {
-    setStartingChat(null);
-  }
-};
+  const handleChatClick = async (serviceId: string, developerId: string) => {
+    if (!user) { router.push('/login'); return; }
+    setStartingChat(serviceId);
+    try {
+      const res = await api.post('/chat/conversations/start', { developerId, serviceId });
+      router.push(`/marketplace/chat/${res.data._id}`);
+    } catch (err) {
+      console.error('Failed to start conversation:', err);
+    } finally {
+      setStartingChat(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
-      {/* Hero Section */}
+      {/* Hero */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -134,17 +111,10 @@ export default function Marketplace() {
               Browse professional developer services and pre-built solutions
             </p>
           </motion.div>
-
           <motion.div className="relative max-w-2xl mx-auto mt-8">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search services..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
+            <input type="text" placeholder="Search services..." value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 backdrop-blur-lg border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </motion.div>
@@ -157,30 +127,22 @@ export default function Marketplace() {
           {categories.map((category) => {
             const Icon = category.icon;
             return (
-              <button
-                key={category.id}
-                onClick={() => {
-                  setSelectedCategory(category.id);
-                  setCurrentPage(1);
-                }}
+              <button key={category.id} onClick={() => { setSelectedCategory(category.id); setCurrentPage(1); }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap transition-all ${
                   selectedCategory === category.id
                     ? "bg-slate-900 text-white shadow-lg"
-                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                <Icon size={16} />
-                {category.name}
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>
+                <Icon size={16} />{category.name}
               </button>
             );
           })}
         </div>
 
-        {/* Services Grid */}
+        {/* Grid */}
         {loading ? (
           <div className="grid gap-6 md:grid-cols-2">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200 animate-pulse h-64"></div>
+              <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200 animate-pulse h-64" />
             ))}
           </div>
         ) : filteredServices.length === 0 ? (
@@ -190,104 +152,97 @@ export default function Marketplace() {
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2">
-              {currentServices.map((service) => (
-                <motion.div
-                  key={service._id}
-                  className="bg-white rounded-3xl border-2 border-slate-100 hover:border-blue-200 hover:shadow-xl shadow-lg overflow-hidden transition-all relative"
-                >
-                  <div className="p-6 pb-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getCategoryColor(service.category)}`}>
-                        {service.category.replace("_", " ").toUpperCase()}
-                      </span>
-                      <div className="flex items-center text-green-600 font-bold text-xl">
-                        <DollarSign size={20} />
-                        <span>{service.budget}</span>
+              {currentServices.map((service) => {
+                // ✅ True if the logged-in user owns this service
+                const isOwner = user?._id === service.clientId?._id;
+
+                return (
+                  <motion.div key={service._id}
+                    className="bg-white rounded-3xl border-2 border-slate-100 hover:border-blue-200 hover:shadow-xl shadow-lg overflow-hidden transition-all relative">
+                    <div className="p-6 pb-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getCategoryColor(service.category)}`}>
+                          {service.category.replace("_", " ").toUpperCase()}
+                        </span>
+                        <div className="flex items-center text-green-600 font-bold text-xl">
+                          <DollarSign size={20} /><span>{service.budget}</span>
+                        </div>
                       </div>
-                    </div>
-
-                    <h3 className="text-xl font-bold text-slate-900 mb-2 line-clamp-2">
-                      {service.title}
-                    </h3>
-                    <p className="text-slate-600 text-sm line-clamp-3 mb-4">
-                      {service.description}
-                    </p>
-
-                    {service.deliveryTime && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Clock size={14} />
-                        <span className="font-semibold">{service.deliveryTime} days delivery</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <p className="text-xs text-slate-500 font-medium">Offered by</p>
-                      <p className="text-sm font-bold text-slate-700">
-                        {service.clientId?.companyName && service.clientId.companyName.trim() !== ""
-                          ? service.clientId.companyName 
-                          : service.clientId?.firstName 
-                            ? `${service.clientId.firstName} ${service.clientId.lastName}` 
-                            : "Expert Developer"}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                    
-                      {user?._id !== service.clientId?._id && (
-                        <button
-                          onClick={() => handleChatClick(service._id, service.clientId._id)}
-                          disabled={startingChat === service._id}
-                          className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-bold rounded-xl text-xs transition-all"
-                        >
-                          {startingChat === service._id 
-                            ? <Loader2 size={14} className="animate-spin" /> 
-                            : <MessageCircle size={14} />
-                          }
-                          Chat
-                        </button>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2 line-clamp-2">{service.title}</h3>
+                      <p className="text-slate-600 text-sm line-clamp-3 mb-4">{service.description}</p>
+                      {service.deliveryTime && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Clock size={14} />
+                          <span className="font-semibold">{service.deliveryTime} days delivery</span>
+                        </div>
                       )}
-                      <Link href={`/marketplace/tasks/${service._id}`}>
-                        <button className="flex items-center gap-1 px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition-all">
-                          <ShoppingCart size={14} />
-                          Buy Service
-                        </button>
-                      </Link>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs text-slate-500 font-medium">Offered by</p>
+                        <p className="text-sm font-bold text-slate-700">
+                          {service.clientId?.companyName?.trim()
+                            ? service.clientId.companyName
+                            : service.clientId?.firstName
+                              ? `${service.clientId.firstName} ${service.clientId.lastName}`
+                              : "Expert Developer"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {isOwner ? (
+                          // ✅ Owner sees a "Your Service" badge instead of action buttons
+                          <Link href={`/marketplace/tasks/${service._id}`}>
+                            <span className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold rounded-xl hover:bg-amber-100 hover:border-amber-300 transition-colors cursor-pointer">
+                              <Lock size={12} /> Your Service
+                            </span>
+                          </Link>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleChatClick(service._id, service.clientId._id)}
+                              disabled={startingChat === service._id}
+                              className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-bold rounded-xl text-xs transition-all">
+                              {startingChat === service._id
+                                ? <Loader2 size={14} className="animate-spin" />
+                                : <MessageCircle size={14} />}
+                              Chat
+                            </button>
+                            <Link href={`/marketplace/tasks/${service._id}`}>
+                              <button className="flex items-center gap-1 px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white font-bold rounded-xl text-xs transition-all">
+                                <ShoppingCart size={14} /> Buy Service
+                              </button>
+                            </Link>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-12 flex justify-center items-center gap-4">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-slate-200 bg-white disabled:opacity-50"
-                >
+                  className="p-2 rounded-lg border border-slate-200 bg-white disabled:opacity-50">
                   <ChevronLeft size={20} />
                 </button>
                 <div className="flex gap-2">
                   {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
+                    <button key={i} onClick={() => setCurrentPage(i + 1)}
                       className={`w-10 h-10 rounded-lg font-bold ${
-                        currentPage === i + 1 ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200"
-                      }`}
-                    >
+                        currentPage === i + 1 ? "bg-slate-900 text-white" : "bg-white text-slate-600 border border-slate-200"}`}>
                       {i + 1}
                     </button>
                   ))}
                 </div>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-slate-200 bg-white disabled:opacity-50"
-                >
+                  className="p-2 rounded-lg border border-slate-200 bg-white disabled:opacity-50">
                   <ChevronRight size={20} />
                 </button>
               </div>

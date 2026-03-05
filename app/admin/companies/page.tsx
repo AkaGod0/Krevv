@@ -45,7 +45,7 @@ export default function ManageCompanies() {
     const endpoint = isCurrentlyBlocked ? "unblock" : "block";
     
     try {
-      console.log(`[ManageCompanies] ${endpoint} company:`, id);
+     
       
       await adminApi.patch(`/admin/companies/${id}/${endpoint}`, {
         reason: isCurrentlyBlocked ? "" : "Administrative block contact support for details."

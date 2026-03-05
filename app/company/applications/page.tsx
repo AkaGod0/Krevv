@@ -830,13 +830,13 @@ const handleOpenChat = async (serviceId: string, developerId: string) => {
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Link
-                   href={`/marketplace/chat/${(selectedOrder as any).conversationId || selectedOrder.serviceId}`}
+                  href={`/marketplace/chat/${selectedOrder.conversationId || selectedOrder.serviceId._id}`}
                     className="flex-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button className="w-full py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-black rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base">
                       <MessageCircle size={18} />
-                      vie Chat
+                      view Chat
                     </button>
                   </Link>
 
