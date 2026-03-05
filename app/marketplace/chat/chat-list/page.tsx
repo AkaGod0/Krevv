@@ -74,7 +74,7 @@ export default function ChatListPage() {
   try {
     setLoading(true);
     const res = await api.get('/chat/conversations');
-    console.log('🔍 Conversations data:', JSON.stringify(res.data[0], null, 2)); // ADD THIS
+
     setConversations(res.data || []);
   } catch (err) {
     console.error('Error fetching conversations:', err);
