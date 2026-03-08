@@ -22,6 +22,14 @@ import {
   Sparkles,
   CheckCircle,
   Globe,
+  ShoppingBag,
+  Code,
+  Palette,
+  Video,
+  Megaphone,
+  Star,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,10 +74,27 @@ interface Job {
   };
 }
 
+interface MarketplaceService {
+  _id: string;
+  title: string;
+  slug: string;
+  description: string;
+  category: string;
+  price: number;
+  seller: {
+    name: string;
+    rating: number;
+  };
+  image?: string;
+  rating: number;
+  reviews: number;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [services, setServices] = useState<MarketplaceService[]>([]);
   const [loading, setLoading] = useState(true);
   const [liking, setLiking] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -79,6 +104,40 @@ export default function HomePage() {
   const [showSearchResults, setShowSearchResults] = useState(false);
 
   const DUMMY_DESCRIPTION = "Join our team and be part of an innovative company that values creativity, collaboration, and growth. We offer competitive benefits and a dynamic work environment.";
+
+  // Marketplace categories matching your actual categories
+  const marketplaceCategories = [
+    {
+      name: "Bug Fix",
+      icon: Zap,
+      color: "from-amber-400 to-orange-500",
+    },
+    {
+      name: "Feature Development",
+      icon: Code,
+      color: "from-amber-400 to-orange-500",
+    },
+    {
+      name: "Code Review",
+      icon: CheckCircle,
+      color: "from-amber-400 to-orange-500",
+    },
+    {
+      name: "Consulting",
+      icon: Briefcase,
+      color: "from-amber-400 to-orange-500",
+    },
+    {
+      name: "Design",
+      icon: Palette,
+      color: "from-amber-400 to-orange-500",
+    },
+    {
+      name: "Other Services",
+      icon: Star,
+      color: "from-amber-400 to-orange-500",
+    },
+  ];
 
   const getSalary = (salary: string) => {
     if (!salary || salary.trim() === "") return "Competitive salary";
@@ -112,6 +171,10 @@ export default function HomePage() {
         const jobsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=12`);
         const jobsData = jobsRes.data?.data || jobsRes.data || [];
         setJobs(Array.isArray(jobsData) ? jobsData : []);
+
+        // TODO: Replace with actual marketplace API
+        // const servicesRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/marketplace?limit=6`);
+        // setServices(servicesRes.data);
       } catch (err) {
         console.error('Error fetching data:', err);
         setPosts([]);
@@ -123,7 +186,6 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  // ✅ FIXED: Search jobs from your database
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.trim().length < 2) {
@@ -134,11 +196,9 @@ export default function HomePage() {
     setSearching(true);
     setShowSearchResults(true);
     try {
-      // Fetch jobs from your database
       const jobsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/jobs?status=active&limit=100`);
       const allJobs = jobsRes.data?.data || jobsRes.data || [];
       
-      // Filter jobs based on search query
       const filteredJobs = (Array.isArray(allJobs) ? allJobs : [])
         .filter((job: Job) => {
           const searchLower = query.toLowerCase();
@@ -151,7 +211,6 @@ export default function HomePage() {
         })
         .slice(0, 5);
 
-      // Fetch and filter posts
       const postsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/posts?limit=100`);
       const allPosts = postsRes.data?.data || postsRes.data || [];
       const filteredPosts = (Array.isArray(allPosts) ? allPosts : [])
@@ -236,6 +295,7 @@ export default function HomePage() {
         )}
       </AnimatePresence>
 
+      {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center">
         <div className="absolute inset-0">
           <img 
@@ -259,7 +319,7 @@ export default function HomePage() {
             </motion.div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-white leading-tight mb-6 px-4">
-              The future of work is here — <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">flexible, global,</span> and built on trust
+              The future of work is here — <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">flexible, global,</span> and in your hands
             </h1>
 
             <motion.p
@@ -268,7 +328,7 @@ export default function HomePage() {
               transition={{ delay: 0.4, duration: 0.8 }}
               className="text-base sm:text-lg md:text-xl lg:text-2xl font-medium text-amber-100 max-w-4xl mx-auto mb-12 leading-relaxed px-4"
             >
-              We are your trusted marketplace through the world of freelancing and remote jobs, helping you build a career that fits your life, so that careers and businesses grow.
+              We are your trusted guide through the world of freelancing, remote jobs, and our digital services marketplace — helping you build a career that fits your life, not the other way around.
             </motion.p>
 
             <motion.div
@@ -285,7 +345,7 @@ export default function HomePage() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => handleSearch(e.target.value)}
-                      placeholder="Search jobs, companies, or keywords..."
+                      placeholder="Search jobs, services, or keywords..."
                       className="flex-1 py-4 text-gray-900 placeholder-gray-400 bg-white outline-none text-base min-w-0"
                     />
                   </div>
@@ -300,7 +360,6 @@ export default function HomePage() {
                   )}
                 </div>
 
-                {/* ✅ FIXED: Search results now link external jobs to company site */}
                 <AnimatePresence>
                   {showSearchResults && (
                     <motion.div 
@@ -323,7 +382,6 @@ export default function HomePage() {
                               </h3>
                               <div className="space-y-1">
                                 {searchResults.jobs.map((job) => (
-                                  /* ✅ External jobs go to company site, user jobs go to details page */
                                   job.isExternal ? (
                                     <a 
                                       key={job._id} 
@@ -404,6 +462,56 @@ export default function HomePage() {
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
       </section>
 
+      {/* Marketplace Categories Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 border border-amber-200 rounded-full mb-4">
+            <ShoppingBag className="text-amber-600" size={16} />
+            <span className="text-amber-700 text-sm font-semibold">Services Marketplace</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+            Find Expert Freelancers
+          </h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            Browse thousands of digital services from talented professionals ready to help bring your projects to life
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+          {marketplaceCategories.map((category, idx) => {
+            const Icon = category.icon;
+            return (
+              <motion.div
+                key={category.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <Link href="/marketplace">
+                  <div className="group relative overflow-hidden bg-white rounded-2xl border-2 border-gray-100 hover:border-amber-300 hover:shadow-xl transition-all p-6 text-center cursor-pointer">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
+                    <div className={`w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                      <Icon size={28} className="text-white" />
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-900">{category.name}</h3>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="text-center">
+          <Link href="/marketplace">
+            <button className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg transition-all">
+              Explore Marketplace <ShoppingBag size={20} />
+            </button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Featured Jobs Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-0">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 gap-4">
           <div>
@@ -421,7 +529,7 @@ export default function HomePage() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs.map((job, idx) => (
+          {jobs.slice(0, 6).map((job, idx) => (
             <motion.div key={job._id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.05 }} className="group bg-white rounded-2xl border-2 border-gray-100 hover:border-amber-300 hover:shadow-xl transition-all p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -449,7 +557,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* ✅ FIXED: External jobs go to company site */}
               {job.isExternal ? (
                 <a href={job.externalApplyUrl} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all">
                   Apply at {job.company} <ExternalLink size={16} />
@@ -467,6 +574,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Blog Posts Section */}
       <section className="bg-gradient-to-br from-gray-50 to-gray-100/50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 gap-4">
@@ -521,6 +629,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* CTA Section */}
       <section className="relative py-24 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-amber-900" />
         <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
@@ -530,11 +639,16 @@ export default function HomePage() {
               <span className="text-amber-100 text-sm font-semibold">Ready to Take the Next Step?</span>
             </div>
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">Your Dream Career Awaits</h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">Join thousands of professionals who've found their perfect remote role. Start your journey today.</p>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">Join thousands of professionals who've found their perfect remote role or hired expert freelancers. Start your journey today.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/jobs">
                 <button className="px-10 py-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 text-lg">
-                  Explore Opportunities <ArrowRight size={20} />
+                  Explore Jobs <Briefcase size={20} />
+                </button>
+              </Link>
+              <Link href="/marketplace">
+                <button className="px-10 py-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 text-lg">
+                  Browse Marketplace <ShoppingBag size={20} />
                 </button>
               </Link>
               <Link href="/post">
