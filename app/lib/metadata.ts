@@ -28,6 +28,13 @@ export const pageMetadata: Record<string, PageMetadata> = {
       "Explore thousands of verified job listings. Filter by location, job type, salary, and experience level. Apply to your dream job today.",
     keywords: "job listings, remote jobs, Nigeria jobs, job search, employment opportunities",
   },
+
+  marketplace: {
+    title: "find service - Find Expert Freelancers | Krevv",
+    description:
+      "Explore thousands of digital services. aDiscover talented professionals ready to help bring your projects to life. get your job done today.",
+    keywords: "service listings, freelance jobs, marketplace, service search, employment opportunities",
+  },
   
   posts: {
     title: "Career Blog - Job Tips, Guides & Resources | Krevv",
