@@ -33,6 +33,12 @@ export const metadata = {
     "tutorials",
     "creative writing",
     "lifestyle",
+    "freelancing",
+    "remote jobs",
+    "marketplace",
+    "service",
+    "Google jobs",
+    "google listing",
   ],
   metadataBase: new URL("https://krevv.com"),
   authors: [
