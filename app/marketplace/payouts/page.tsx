@@ -27,6 +27,7 @@ interface PayoutRequest {
     description: string;
     price: number;
     totalAmount: number;
+    conversationId?: string;
     serviceId: {
       _id: string;
       title: string;
@@ -63,14 +64,15 @@ export default function MyPayoutRequestsPage() {
     totalApproved: 0,
   });
 
-
   const backLink = user?.role === "company" 
-  ? "/company/jobs" 
-  : user?.role === "user" 
-    ? "/jobs/my-jobs" 
-    : "/company/jobs"; // Default fallback
+    ? "/company/jobs" 
+    : user?.role === "user" 
+      ? "/jobs/my-jobs" 
+      : "/company/jobs";
+  
   const backLabel = user?.role === "company"
-    
+    ? "Back to Company Dashboard"
+    : "Back to My Jobs";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -151,12 +153,12 @@ export default function MyPayoutRequestsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-         <Link href={backLink}>
-  <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold mb-6 transition-colors">
-    <ArrowLeft size={20} />
-    {backLabel}
-  </button>
-</Link>
+          <Link href={backLink}>
+            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold mb-6 transition-colors">
+              <ArrowLeft size={20} />
+              {backLabel}
+            </button>
+          </Link>
 
           <div className="bg-white rounded-3xl shadow-xl p-8 border-2 border-green-100 mb-6">
             <div className="flex items-center gap-4 mb-4">
@@ -338,12 +340,11 @@ export default function MyPayoutRequestsPage() {
 
                   {/* Actions */}
                   <div className="flex lg:flex-col gap-2 lg:min-w-[140px]">
-                 <Link href={`/marketplace/chat/${(request.orderId as any).conversationId || request.orderId.serviceId._id}`} className="flex-1">
-                      <button className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition text-sm flex items-center justify-center gap-1.5">
-                        <Eye size={16} />
-                        View Chat
-                      </button>
-                    </Link>
+                    <Link href={`/applications/job/${request.orderId.serviceId._id}`} className="w-full">
+                        <button className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-md">
+                          View Application
+                        </button>
+                      </Link>
                   </div>
                 </div>
               </motion.div>

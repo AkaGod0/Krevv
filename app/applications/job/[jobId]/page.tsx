@@ -75,7 +75,8 @@ interface Order {
     lastName: string;
     email: string;
   };
-  serviceId: string;
+ serviceId: { _id: string; title: string; category: string; budget: number; };
+  conversationId: string;
   createdAt: string;
   paidAt?: string;
   deliveredAt?: string;
@@ -691,11 +692,13 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ jobI
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3">
-                    <Link href={`/marketplace/chat/${(order as any).conversationId || order.serviceId}/`}>
-                      <button className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl">
-                        <MessageCircle size={18} /> Open Chat
-                      </button>
-                    </Link>
+                  {order.status !== "completed" && (
+                     <Link href={`/marketplace/chat/${order.conversationId || `order-${order._id}`}`}>
+                        <button className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl">
+                          <MessageCircle size={18} /> Open Chat
+                        </button>
+                      </Link>
+                    )}
 
                     {order.status === "paid" && (
                       <button disabled={updatingStatus} onClick={() => startWork(order._id)}
