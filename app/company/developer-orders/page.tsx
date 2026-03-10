@@ -322,11 +322,11 @@ export default function DeveloperOrdersPage() {
 
                       {/* ── Chat button — uses conversationId for chat orders ── */}
                       {isChat && order.conversationId && (
-                        <Link href={`/marketplace/chat/${order.conversationId}`} className="flex-1 sm:flex-initial">
-                          <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold rounded-xl transition-all text-sm border border-purple-200">
-                            <MessageCircle size={15} /> Open Chat
-                          </button>
-                        </Link>
+                        <Link href={`/marketplace/chat/${order.conversationId || `order-${order._id}`}`} className="flex-1 sm:flex-initial">
+                        <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold rounded-xl transition-all text-sm border border-purple-200">
+                          <MessageCircle size={15} /> Open Chat
+                        </button>
+                      </Link>
                       )}
 
                       {/* ── Start Work ── */}

@@ -147,7 +147,108 @@ function ChatRoomContent({ conversationId }: { conversationId: string }) {
       }
 
       if (probe.status !== 404) { console.error("Unexpected error:", probe.status); return; }
+    
+      // Check if conversationId is an order ID (prefixed with "order-")
+if (conversationId.startsWith('order-')) {
+  const actualOrderId = conversationId.replace('order-', '');
+  console.log('[Chat] Detected order ID:', actualOrderId);
+  
+  try {
+    const orderRes = await api.get(`/marketplace/orders/${actualOrderId}`);
+    const order = orderRes.data?.data || orderRes.data;
+    console.log('[Chat] Found order:', order);
+    
+    // If order has conversationId, use it directly
+    if (order.conversationId) {
+      console.log('[Chat] Order has conversationId, fetching conversation:', order.conversationId);
+      try {
+        const convRes = await api.get(`/chat/conversations/${order.conversationId}`);
+        setConversation(convRes.data);
+        const messagesRes = await api.get(`/chat/conversations/${order.conversationId}/messages`);
+        setMessages(messagesRes.data || []);
+        await api.post(`/chat/conversations/${order.conversationId}/read`).catch(() => {});
+        return;
+      } catch (convErr) {
+        console.error('[Chat] Failed to fetch conversation by ID:', convErr);
+      }
+    }
+    
+    // Fallback: Fetch all conversations and search
+    console.log('[Chat] No conversationId on order, searching all conversations...');
+    const allConvosRes = await api.get('/chat/conversations');
+    const allConvos = allConvosRes.data || [];
+    console.log('[Chat] Total conversations available:', allConvos.length);
+    
+    const serviceId = order.serviceId?._id || order.serviceId;
+    const developerId = order.developerId?._id || order.developerId;
+    const clientId = order.clientId?._id || order.clientId;
+    
+    console.log('[Chat] Looking for conversation with:', {
+      serviceId,
+      developerId,
+      clientId,
+      myId: user?._id || (user as any)?.id
+    });
+    
+    // Debug: Log all conversations to see structure
+    allConvos.forEach((c: any, i: number) => {
+      console.log(`[Chat] Conversation ${i}:`, {
+        _id: c._id,
+        serviceId: c.serviceId?._id || c.serviceId,
+        developerId: c.developerId?._id || c.developerId,
+        clientId: c.clientId?._id || c.clientId,
+      });
+    });
+    
+    // Find conversation matching this order
+  // Find conversation matching this order
+const matchingConvo = allConvos.find((c: any) => {
+  const convDeveloperId = c.developerId?._id || c.developerId || c.developer?._id;
+  const convClientId = c.clientId?._id || c.clientId || c.client?._id;
+  
+  const devMatch = convDeveloperId?.toString() === developerId?.toString();
+  const clientMatch = convClientId?.toString() === clientId?.toString();
+  
+  console.log(`[Chat] Checking conversation ${c._id}:`, {
+    devMatch,
+    clientMatch,
+    bothMatch: devMatch && clientMatch  // ← Changed from requiring serviceMatch too
+  });
+  
+  // ✅ Just match developer + client (no serviceId check since it's undefined)
+  return devMatch && clientMatch;
+});
+    
+    if (matchingConvo) {
+      console.log('[Chat] ✅ Found matching conversation:', matchingConvo._id);
+      setConversation(matchingConvo);
+      const messagesRes = await api.get(`/chat/conversations/${matchingConvo._id}/messages`);
+      setMessages(messagesRes.data || []);
+      await api.post(`/chat/conversations/${matchingConvo._id}/read`).catch(() => {});
+      return;
+    }
+    
+    // If still no match, try creating a new conversation as fallback
+    console.log('[Chat] No matching conversation found, attempting to create one...');
+    const startRes = await api.post('/chat/conversations/start', {
+      developerId: developerId.toString(),
+      serviceId: serviceId.toString(),
+    });
+    const newConversation = startRes.data;
+    console.log('[Chat] Created new conversation:', newConversation._id);
+    
+    // Redirect to the new conversation ID
+    router.replace(`/marketplace/chat/${newConversation._id}`);
+    return;
+    
+  } catch (err) {
+    console.error('[Chat] Error handling order ID:', err);
+    setLoading(false);
+    return;
+  }
+}
 
+      // If not an order, try fetching as service ID
       const serviceRes = await api.get(`/marketplace/services/${conversationId}`);
       const service = serviceRes.data?.data || serviceRes.data;
       const developerId = service?.clientId?._id || service?.clientId;

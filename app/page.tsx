@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext"; // Import useAuth hook
 
 const stripHtmlAndImages = (html: string) => {
   if (!html) return "No content";
@@ -92,6 +93,7 @@ interface MarketplaceService {
 
 export default function HomePage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth(); // Get authentication status
   const [posts, setPosts] = useState<Post[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [services, setServices] = useState<MarketplaceService[]>([]);
@@ -138,6 +140,14 @@ export default function HomePage() {
       color: "from-amber-400 to-orange-500",
     },
   ];
+
+  // Handle marketplace click - redirect to login if not authenticated
+  const handleMarketplaceClick = (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
+      e.preventDefault();
+      router.push('/login');
+    }
+  };
 
   const getSalary = (salary: string) => {
     if (!salary || salary.trim() === "") return "Competitive salary";
@@ -488,7 +498,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
               >
-                <Link href="/marketplace">
+                <Link href="/marketplace" onClick={handleMarketplaceClick}>
                   <div className="group relative overflow-hidden bg-white rounded-2xl border-2 border-gray-100 hover:border-amber-300 hover:shadow-xl transition-all p-6 text-center cursor-pointer">
                     <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
                     <div className={`w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
@@ -503,7 +513,7 @@ export default function HomePage() {
         </div>
 
         <div className="text-center">
-          <Link href="/marketplace">
+          <Link href="/marketplace" onClick={handleMarketplaceClick}>
             <button className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg transition-all">
               Explore Marketplace <ShoppingBag size={20} />
             </button>
@@ -646,7 +656,7 @@ export default function HomePage() {
                   Explore Jobs <Briefcase size={20} />
                 </button>
               </Link>
-              <Link href="/marketplace">
+              <Link href="/marketplace" onClick={handleMarketplaceClick}>
                 <button className="px-10 py-5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-2xl transition-all flex items-center justify-center gap-3 text-lg">
                   Browse Marketplace <ShoppingBag size={20} />
                 </button>

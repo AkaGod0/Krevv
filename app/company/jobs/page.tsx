@@ -496,7 +496,11 @@ export default function CompanyJobsPage() {
                           
                           {/* ✅ Edit Link */}
                           <Link
-                            href={`/company/jobs/${job._id}/edit`}
+                          href={
+                              job.isService
+                                ? `/company/edit-service/${job._id}`
+                                : `/company/jobs/${job._id}/edit`
+                            }
                             className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 text-blue-600 transition-colors"
                           >
                             <Edit size={16} /> Edit

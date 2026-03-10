@@ -455,7 +455,7 @@ export default function MyApplicationsPage() {
                     )}
 
                     <div className="flex gap-2 flex-wrap">
-                      {canChat && (
+                      {canChat && ( 
                         <Link href={`/marketplace/chat/${order.conversationId || order.serviceId._id}`} className="relative">
                           <button className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-semibold text-xs transition shadow-md">
                             <MessageCircle size={12} /> Open Chat
