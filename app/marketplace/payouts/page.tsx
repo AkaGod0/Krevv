@@ -85,35 +85,40 @@ export default function MyPayoutRequestsPage() {
   }, [user, authLoading]);
 
   const fetchPayoutRequests = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get("/marketplace/my-payout-requests");
-      const requests = res.data || [];
-      setPayoutRequests(requests);
+  setLoading(true);
+  try {
+    const res = await api.get("/marketplace/my-payout-requests");
+    const requests = res.data || [];
+    
+    // ✅ Filter out requests where the order or service was deleted
+    const validRequests = requests.filter((r: PayoutRequest) => 
+      r.orderId && r.orderId.serviceId && r.orderId.title
+    );
+    
+    setPayoutRequests(validRequests);
 
-      // Calculate stats
-      const totalPending = requests
-        .filter((r: PayoutRequest) => r.status === "pending")
-        .reduce((sum: number, r: PayoutRequest) => sum + r.amount, 0);
+    const totalPending = validRequests
+      .filter((r: PayoutRequest) => r.status === "pending")
+      .reduce((sum: number, r: PayoutRequest) => sum + r.amount, 0);
 
-      const totalApproved = requests
-        .filter((r: PayoutRequest) => r.status === "approved")
-        .reduce((sum: number, r: PayoutRequest) => sum + r.amount, 0);
+    const totalApproved = validRequests
+      .filter((r: PayoutRequest) => r.status === "approved")
+      .reduce((sum: number, r: PayoutRequest) => sum + r.amount, 0);
 
-      setStats({
-        total: requests.length,
-        pending: requests.filter((r: PayoutRequest) => r.status === "pending").length,
-        approved: requests.filter((r: PayoutRequest) => r.status === "approved").length,
-        rejected: requests.filter((r: PayoutRequest) => r.status === "rejected").length,
-        totalPending,
-        totalApproved,
-      });
-    } catch (err) {
-      console.error("Error fetching payout requests:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setStats({
+      total: validRequests.length,
+      pending: validRequests.filter((r: PayoutRequest) => r.status === "pending").length,
+      approved: validRequests.filter((r: PayoutRequest) => r.status === "approved").length,
+      rejected: validRequests.filter((r: PayoutRequest) => r.status === "rejected").length,
+      totalPending,
+      totalApproved,
+    });
+  } catch (err) {
+    console.error("Error fetching payout requests:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getStatusBadge = (status: string) => {
     const styles = {
@@ -245,8 +250,8 @@ export default function MyPayoutRequestsPage() {
                             Requested {new Date(request.requestedAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-1">{request.orderId.title}</h3>
-                        <p className="text-sm text-gray-600 line-clamp-2">{request.orderId.description}</p>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">{request.orderId?.title ?? "Deleted Order"}</h3>
+                        <p className="text-sm text-gray-600 line-clamp-2">{request.orderId?.description ?? "Description not available"}</p>
                       </div>
                     </div>
 
@@ -254,15 +259,15 @@ export default function MyPayoutRequestsPage() {
                     <div className="bg-blue-50 rounded-xl p-4 mb-4 border-2 border-blue-100">
                       <p className="text-xs font-bold text-blue-600 uppercase mb-2">Order Details</p>
                       <div className="space-y-1 text-sm">
-                        <p className="font-semibold text-gray-900">{request.orderId.serviceId.title}</p>
+                        <p className="font-semibold text-gray-900">{request.orderId?.serviceId?.title ?? "Deleted Service"}</p>
                         <p className="text-gray-600">
                           Client:{" "}
-                          {request.orderId.clientId.companyName ||
-                            `${request.orderId.clientId.firstName} ${request.orderId.clientId.lastName}`}
+                          {request.orderId?.clientId?.companyName ||
+                            `${request.orderId?.clientId?.firstName} ${request.orderId?.clientId?.lastName}`}
                         </p>
                         <p className="text-gray-600 flex items-center gap-1">
                           <Mail size={12} />
-                          {request.orderId.clientId.email}
+                          {request.orderId?.clientId?.email ?? "Email not available"}
                         </p>
                       </div>
                     </div>

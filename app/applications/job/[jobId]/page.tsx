@@ -224,49 +224,64 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ jobI
 
   // ─── Data Fetching ──────────────────────────────────────────────────────────
 
-  const initFetch = async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      try {
-        const serviceRes = await api.get(`/marketplace/services/${jobId}`, { validateStatus: (s) => s < 500 });
-        if (serviceRes.status === 200) {
-          setService(serviceRes.data.data || serviceRes.data);
-          setIsMarketplace(true);
-          const ordersRes = await api.get(`/marketplace/services/${jobId}/orders`, { validateStatus: (s) => s < 500 });
-          if (ordersRes.status === 200) {
-            const raw = ordersRes.data.data || ordersRes.data;
-            const paid = raw.filter((o: Order) => ["paid","in_progress","delivered","completed"].includes(o.status));
-            setOrders(paid);
-            calculateOrderStats(paid);
-            fetchPayoutRequests();
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (_) {}
-
-      const jobRes = await api.get(`/jobs/${jobId}`, { validateStatus: (s) => s < 500 });
-      if (jobRes.status === 200) {
-        setJob(jobRes.data);
-        setIsMarketplace(false);
-        const appRes = await api.get(`/applications/job/${jobId}`, { validateStatus: (s) => s < 500 });
-        if (appRes.status === 200) {
-          const raw = appRes.data.data || appRes.data;
-          setApplications(raw.map((a: any) => ({ ...a, applicantData: a.user })));
-          calculateAppStats(raw.map((a: any) => ({ ...a, applicantData: a.user })));
-          setLoading(false);
-          return;
-        }
-      }
-      setError(true);
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      setError(true);
-    } finally {
+ const initFetch = async () => {
+  setLoading(true);
+  setError(false);
+  
+  try {
+    // ✅ TRY SERVICE FIRST
+    const serviceRes = await api.get(`/marketplace/services/${jobId}`, {
+      validateStatus: (status) => status < 500 // Don't throw on 404
+    });
+    
+    if (serviceRes.status === 200 && serviceRes.data) {
+      const serviceData = serviceRes.data.data || serviceRes.data;
+      setService(serviceData);
+      setIsMarketplace(true);
+      
+      // Fetch orders
+      const ordersRes = await api.get(`/marketplace/services/${jobId}/orders`);
+      const allOrders = ordersRes.data.data || ordersRes.data || [];
+      const paidOrders = allOrders.filter((o: Order) => 
+        ["paid", "in_progress", "delivered", "completed"].includes(o.status)
+      );
+      
+      setOrders(paidOrders);
+      calculateOrderStats(paidOrders);
+      fetchPayoutRequests();
       setLoading(false);
+      return; // ✅ IMPORTANT: Exit here if service found!
     }
-  };
+
+    // ✅ SERVICE NOT FOUND, TRY JOB
+    const jobRes = await api.get(`/jobs/${jobId}`, {
+      validateStatus: (status) => status < 500
+    });
+    
+    if (jobRes.status === 200 && jobRes.data) {
+      setJob(jobRes.data);
+      setIsMarketplace(false);
+      
+      const appRes = await api.get(`/applications/job/${jobId}`);
+      const raw = appRes.data.data || appRes.data || [];
+      const mappedApps = raw.map((a: any) => ({ ...a, applicantData: a.user }));
+      
+      setApplications(mappedApps);
+      calculateAppStats(mappedApps);
+      setLoading(false);
+      return;
+    }
+
+    // ✅ NEITHER FOUND
+    setError(true);
+    
+  } catch (err) {
+    console.error("Error in initFetch:", err);
+    setError(true);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchPayoutRequests = async () => {
     try {
@@ -600,16 +615,112 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ jobI
         )}
 
         {/* No applications empty state */}
-        {!isMarketplace && applications.length === 0 && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="bg-white p-16 text-center rounded-3xl border-2 border-dashed border-gray-200 shadow-lg">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <User size={48} className="text-gray-300" />
+       {/* Applications List */}
+{!isMarketplace && (
+  <div className="space-y-4">
+    {applications.length === 0 ? (
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="bg-white p-16 text-center rounded-3xl border-2 border-dashed border-gray-200 shadow-lg">
+        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <User size={48} className="text-gray-300" />
+        </div>
+        <h3 className="text-2xl font-bold text-gray-700 mb-2">No Applications Yet</h3>
+        <p className="text-gray-500">Applications will appear here once candidates apply for this job.</p>
+      </motion.div>
+    ) : (
+      applications.map((app, idx) => {
+        // ── Safely resolve applicant info regardless of field shape ──
+        const applicant = app.applicantData || (app as any).user || {};
+        const fullName = [applicant.firstName, applicant.lastName].filter(Boolean).join(' ') || 'Unknown Applicant';
+        const email    = applicant.email || 'No email provided';
+        const initial  = fullName[0]?.toUpperCase() || '?';
+
+        return (
+          <motion.div key={app._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05 }}
+            className="bg-white p-6 rounded-3xl shadow-lg border-2 border-amber-100 hover:shadow-xl transition-all">
+
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              {/* Applicant Info */}
+              <div className="flex items-center gap-4 flex-1">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-black text-xl shadow-lg">
+                  {initial}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h3 className="font-black text-lg text-gray-900">{fullName}</h3>
+                    {getApplicationStatusBadge(app.status)}
+                  </div>
+                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                    <Mail size={13} /> {email}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Applied: {new Date(app.appliedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 flex-wrap">
+                {app.status === 'pending' && (
+                  <>
+                    <button
+                      disabled={updatingStatus}
+                      onClick={() => updateApplicationStatus(app._id, 'reviewing')}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold rounded-xl transition-all text-sm">
+                      <Eye size={15} /> Review
+                    </button>
+                    <button
+                      disabled={updatingStatus}
+                      onClick={() => updateApplicationStatus(app._id, 'accepted')}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all text-sm">
+                      <CheckCircle size={15} /> Accept
+                    </button>
+                    <button
+                      disabled={updatingStatus}
+                      onClick={() => updateApplicationStatus(app._id, 'rejected')}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-xl transition-all text-sm">
+                      <XCircle size={15} /> Reject
+                    </button>
+                  </>
+                )}
+                {app.status === 'reviewing' && (
+                  <>
+                    <button
+                      disabled={updatingStatus}
+                      onClick={() => updateApplicationStatus(app._id, 'accepted')}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all text-sm">
+                      <CheckCircle size={15} /> Accept
+                    </button>
+                    <button
+                      disabled={updatingStatus}
+                      onClick={() => updateApplicationStatus(app._id, 'rejected')}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-xl transition-all text-sm">
+                      <XCircle size={15} /> Reject
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setSelectedApplication({ ...app, applicantData: applicant as any })}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all text-sm">
+                  <Eye size={15} /> View
+                </button>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-700 mb-2">No Applications Yet</h3>
-            <p className="text-gray-500">Applications will appear here once candidates apply for this job.</p>
+
+            {/* Cover letter preview */}
+            {app.coverLetter && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Cover Letter</p>
+                <p className="text-sm text-gray-600 line-clamp-2">{app.coverLetter}</p>
+              </div>
+            )}
           </motion.div>
-        )}
+        );
+      })
+    )}
+  </div>
+)}
 
         {/* Orders List */}
         {isMarketplace && (

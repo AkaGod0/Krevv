@@ -43,74 +43,91 @@ export default function CompanyDashboardPage() {
   }, [unreadMessages.length]);
 
   const fetchDashboardData = async () => {
-    try {
-      // ✅ Fetch stats, services AND company orders (as buyer) in parallel
-      const [statsRes, servicesRes, myOrdersRes] = await Promise.all([
-        api.get("/company/dashboard/stats"),
-        api.get("/marketplace/my-services"),
-        // ✅ Fetch all orders where this company is the CLIENT/BUYER
-        api.get("/marketplace/my-orders").catch(() => ({ data: [] })),
-      ]);
+  try {
+    const [statsRes, servicesRes, myOrdersRes] = await Promise.all([
+      api.get("/company/dashboard/stats"),
+      api.get("/marketplace/my-services"),
+      api.get("/marketplace/my-orders").catch(() => ({ data: [] })),
+    ]);
 
-      const marketplaceServices = servicesRes.data || [];
-      const myOrders = myOrdersRes.data || [];
+    const marketplaceServices = servicesRes.data || [];
+    const myBuyerOrders = myOrdersRes.data || [];
 
-      // ✅ Count only paid/active orders from the company's perspective as buyer
-      const paidBuyerOrders = myOrders.filter((o: any) =>
-        ["paid", "in_progress", "delivered", "completed"].includes(o.status)
-      );
-
-      // ✅ Also count orders received by company's OWN services (as seller)
-      let paidSellerOrdersCount = 0;
-      if (marketplaceServices.length > 0) {
-        const ordersPromises = marketplaceServices.map((service: any) =>
+    // ── Seller orders: fetch per service and flatten ──────────────────────
+    let allSellerOrders: any[] = [];
+    if (marketplaceServices.length > 0) {
+      const ordersArrays = await Promise.all(
+        marketplaceServices.map((service: any) =>
           api
             .get(`/marketplace/services/${service._id}/orders`)
-            .then((res) => res.data || [])
+            .then((res) => {
+              const orders = res.data?.data || res.data || [];
+              // Tag each order with the service title for display
+              return orders.map((o: any) => ({
+                ...o,
+                _serviceTitle: service.title,
+              }));
+            })
             .catch(() => [])
-        );
-        const allOrdersArrays = await Promise.all(ordersPromises);
-        const allSellerOrders = allOrdersArrays.flat();
-        paidSellerOrdersCount = allSellerOrders.filter((o: any) =>
-          ["paid", "in_progress", "delivered", "completed"].includes(o.status)
-        ).length;
-      }
-
-      // ✅ Total paid orders = buyer orders + seller orders (deduplicated by _id)
-      const allOrderIds = new Set<string>();
-      [...paidBuyerOrders].forEach((o: any) => allOrderIds.add(o._id));
-      const totalPaidOrders = paidBuyerOrders.length + paidSellerOrdersCount;
-
-      // Merge Jobs and Services for the "Recent Postings" list
-      const jobs = statsRes.data.data?.recentJobs || [];
-      const services = marketplaceServices.map((s: any) => ({
-        ...s,
-        isService: true,
-        orderCount: 0,
-      }));
-
-      const combined = [...jobs, ...services]
-        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 5);
-
-      setRecentPostings(combined);
-
-      setStats({
-        ...statsRes.data.data,
-        marketplace: {
-          totalServices: marketplaceServices.length,
-          totalOrders: totalPaidOrders,
-        },
-      });
-    } catch (err: any) {
-      console.error("Error fetching dashboard data:", err);
-      if (err.response?.status === 401) {
-        logout();
-      }
-    } finally {
-      setLoading(false);
+        )
+      );
+      allSellerOrders = ordersArrays.flat();
     }
-  };
+
+    // ── Deduplicate by _id across buyer + seller orders ───────────────────
+    const seenIds = new Set<string>();
+    const allOrders: any[] = [];
+
+    [...myBuyerOrders, ...allSellerOrders].forEach((o: any) => {
+      if (!seenIds.has(o._id)) {
+        seenIds.add(o._id);
+        allOrders.push(o);
+      }
+    });
+
+    const paidOrders = allOrders.filter((o: any) =>
+      ["paid", "in_progress", "delivered", "completed"].includes(o.status)
+    );
+
+    console.log("[Dashboard] Seller orders:", allSellerOrders.length);
+    console.log("[Dashboard] Buyer orders:", myBuyerOrders.length);
+    console.log("[Dashboard] Total deduplicated paid orders:", paidOrders.length);
+
+    // ── Recent postings ───────────────────────────────────────────────────
+    const jobs = statsRes.data.data?.recentJobs || [];
+    const services = marketplaceServices.map((s: any) => ({
+      ...s,
+      isService: true,
+      orderCount: allSellerOrders.filter(
+        (o: any) =>
+          (o.serviceId?._id || o.serviceId) === s._id &&
+          ["paid", "in_progress", "delivered", "completed"].includes(o.status)
+      ).length,
+    }));
+
+    const combined = [...jobs, ...services]
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, 5);
+
+    setRecentPostings(combined);
+
+    setStats({
+      ...statsRes.data.data,
+      marketplace: {
+        totalServices: marketplaceServices.length,
+        totalOrders: paidOrders.length,
+      },
+    });
+  } catch (err: any) {
+    console.error("Error fetching dashboard data:", err);
+    if (err.response?.status === 401) logout();
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleNotificationClick = async () => {
     if (unreadMessages.length > 0) {
