@@ -152,12 +152,13 @@ export default function PostsPage() {
             Insights & Resources
           </motion.div>
           
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-[#3e2a1a] via-yellow-800 to-[#3e2a1a] bg-clip-text text-transparent"
-          >
+        
+          
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-gray-600 max-w-2xl mx-auto text-lg font-medium"
           >
             Exploring perspectives through words. Join our community of writers and readers.
           </motion.p>
