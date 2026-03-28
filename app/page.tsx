@@ -284,7 +284,7 @@ export default function HomePage() {
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50">
       <div className="text-center">
         <Loader2 className="animate-spin text-amber-600 w-12 h-12 mx-auto mb-4" />
-        <p className="text-gray-600 font-medium">Loading amazing opportunities...</p>
+        <p className="text-gray-600 font-medium">Loading...</p>
       </div>
     </div>
   );
