@@ -152,14 +152,14 @@ export default function PostsPage() {
             Insights & Resources
           </motion.div>
           
-          <motion.h5
+          <motion.h6
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-[#3e2a1a] via-yellow-800 to-[#3e2a1a] bg-clip-text text-transparent"
+            className="text-3xl md:text-5xl font-black mb-6 bg-gradient-to-r from-[#3e2a1a] via-yellow-800 to-[#3e2a1a] bg-clip-text text-transparent"
           >
               Welcome to <span className="text-yellow-700">our blog</span>
-          </motion.h5>
+          </motion.h6>
           
           <motion.p
             initial={{ opacity: 0 }}
