@@ -158,14 +158,6 @@ export default function PostsPage() {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-[#3e2a1a] via-yellow-800 to-[#3e2a1a] bg-clip-text text-transparent"
           >
-            The <span className="text-yellow-700">Chronicle</span>
-          </motion.h1>
-          
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-gray-600 max-w-2xl mx-auto text-lg font-medium"
           >
             Exploring perspectives through words. Join our community of writers and readers.
           </motion.p>
